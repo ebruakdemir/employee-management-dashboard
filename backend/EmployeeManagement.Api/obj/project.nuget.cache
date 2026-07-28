@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "bgbCTXfQCRE=",
+  "success": true,
+  "projectFilePath": "/Users/ebru/myprojects/employee-management-dashboard/backend/EmployeeManagement.Api/EmployeeManagement.Api.csproj",
+  "expectedPackageFiles": [
+    "/Users/ebru/.nuget/packages/microsoft.aspnetcore.openapi/10.0.10/microsoft.aspnetcore.openapi.10.0.10.nupkg.sha512",
+    "/Users/ebru/.nuget/packages/microsoft.openapi/2.11.0/microsoft.openapi.2.11.0.nupkg.sha512"
+  ],
+  "logs": []
+}
