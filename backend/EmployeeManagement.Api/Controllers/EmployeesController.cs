@@ -1,5 +1,7 @@
+using EmployeeManagement.Api.Data;
 using EmployeeManagement.Api.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace EmployeeManagement.Api.Controllers;
 
@@ -7,44 +9,27 @@ namespace EmployeeManagement.Api.Controllers;
 [Route("api/[controller]")]
 public class EmployeesController : ControllerBase
 {
-    private static readonly List<Employee> Employees =
-    [
-        new Employee
-        {
-            Id = 1,
-            FirstName = "Ebru",
-            LastName = "Akdemir",
-            Email = "ebru@example.com",
-            Department = "Software",
-            Position = "Junior Developer",
-            Salary = 35000,
-            HireDate = new DateTime(2026, 7, 1),
-            IsActive = true
-        },
-        new Employee
-        {
-            Id = 2,
-            FirstName = "Daniel",
-            LastName = "Meyer",
-            Email = "daniel@example.com",
-            Department = "Human Resources",
-            Position = "HR Specialist",
-            Salary = 42000,
-            HireDate = new DateTime(2025, 11, 15),
-            IsActive = true
-        }
-    ];
+    private readonly AppDbContext _context;
+
+    public EmployeesController(AppDbContext context)
+    {
+        _context = context;
+    }
 
     [HttpGet]
-    public ActionResult<List<Employee>> GetEmployees()
+    public async Task<ActionResult<List<Employee>>> GetEmployees()
     {
-        return Ok(Employees);
+        List<Employee> employees =
+            await _context.Employees.ToListAsync();
+
+        return Ok(employees);
     }
 
     [HttpGet("{id:int}")]
-    public ActionResult<Employee> GetEmployeeById(int id)
+    public async Task<ActionResult<Employee>> GetEmployeeById(int id)
     {
-        Employee? employee = Employees.FirstOrDefault(e => e.Id == id);
+        Employee? employee =
+            await _context.Employees.FindAsync(id);
 
         if (employee is null)
         {
@@ -55,14 +40,23 @@ public class EmployeesController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult<Employee> CreateEmployee(Employee employee)
+    public async Task<ActionResult<Employee>> CreateEmployee(
+        Employee employee)
     {
-        int nextId = Employees.Count == 0
-            ? 1
-            : Employees.Max(e => e.Id) + 1;
+        bool emailExists = await _context.Employees
+            .AnyAsync(e => e.Email == employee.Email);
 
-        employee.Id = nextId;
-        Employees.Add(employee);
+        if (emailExists)
+        {
+            return Conflict(new
+            {
+                message = "An employee with this email address already exists."
+            });
+        }
+
+        _context.Employees.Add(employee);
+
+        await _context.SaveChangesAsync();
 
         return CreatedAtAction(
             nameof(GetEmployeeById),
@@ -72,14 +66,29 @@ public class EmployeesController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    public IActionResult UpdateEmployee(int id, Employee updatedEmployee)
+    public async Task<IActionResult> UpdateEmployee(
+        int id,
+        Employee updatedEmployee)
     {
         Employee? existingEmployee =
-            Employees.FirstOrDefault(e => e.Id == id);
+            await _context.Employees.FindAsync(id);
 
         if (existingEmployee is null)
         {
             return NotFound();
+        }
+
+        bool emailExists = await _context.Employees
+            .AnyAsync(e =>
+                e.Email == updatedEmployee.Email &&
+                e.Id != id);
+
+        if (emailExists)
+        {
+            return Conflict(new
+            {
+                message = "An employee with this email address already exists."
+            });
         }
 
         existingEmployee.FirstName = updatedEmployee.FirstName;
@@ -91,20 +100,25 @@ public class EmployeesController : ControllerBase
         existingEmployee.HireDate = updatedEmployee.HireDate;
         existingEmployee.IsActive = updatedEmployee.IsActive;
 
+        await _context.SaveChangesAsync();
+
         return NoContent();
     }
 
     [HttpDelete("{id:int}")]
-    public IActionResult DeleteEmployee(int id)
+    public async Task<IActionResult> DeleteEmployee(int id)
     {
-        Employee? employee = Employees.FirstOrDefault(e => e.Id == id);
+        Employee? employee =
+            await _context.Employees.FindAsync(id);
 
         if (employee is null)
         {
             return NotFound();
         }
 
-        Employees.Remove(employee);
+        _context.Employees.Remove(employee);
+
+        await _context.SaveChangesAsync();
 
         return NoContent();
     }
