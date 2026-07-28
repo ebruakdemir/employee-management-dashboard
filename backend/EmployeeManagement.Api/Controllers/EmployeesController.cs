@@ -40,4 +40,72 @@ public class EmployeesController : ControllerBase
     {
         return Ok(Employees);
     }
+
+    [HttpGet("{id:int}")]
+    public ActionResult<Employee> GetEmployeeById(int id)
+    {
+        Employee? employee = Employees.FirstOrDefault(e => e.Id == id);
+
+        if (employee is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(employee);
+    }
+
+    [HttpPost]
+    public ActionResult<Employee> CreateEmployee(Employee employee)
+    {
+        int nextId = Employees.Count == 0
+            ? 1
+            : Employees.Max(e => e.Id) + 1;
+
+        employee.Id = nextId;
+        Employees.Add(employee);
+
+        return CreatedAtAction(
+            nameof(GetEmployeeById),
+            new { id = employee.Id },
+            employee
+        );
+    }
+
+    [HttpPut("{id:int}")]
+    public IActionResult UpdateEmployee(int id, Employee updatedEmployee)
+    {
+        Employee? existingEmployee =
+            Employees.FirstOrDefault(e => e.Id == id);
+
+        if (existingEmployee is null)
+        {
+            return NotFound();
+        }
+
+        existingEmployee.FirstName = updatedEmployee.FirstName;
+        existingEmployee.LastName = updatedEmployee.LastName;
+        existingEmployee.Email = updatedEmployee.Email;
+        existingEmployee.Department = updatedEmployee.Department;
+        existingEmployee.Position = updatedEmployee.Position;
+        existingEmployee.Salary = updatedEmployee.Salary;
+        existingEmployee.HireDate = updatedEmployee.HireDate;
+        existingEmployee.IsActive = updatedEmployee.IsActive;
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id:int}")]
+    public IActionResult DeleteEmployee(int id)
+    {
+        Employee? employee = Employees.FirstOrDefault(e => e.Id == id);
+
+        if (employee is null)
+        {
+            return NotFound();
+        }
+
+        Employees.Remove(employee);
+
+        return NoContent();
+    }
 }
