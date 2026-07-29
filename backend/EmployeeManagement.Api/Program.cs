@@ -1,9 +1,12 @@
 using EmployeeManagement.Api.Data;
+using EmployeeManagement.Api.Mapping;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
+builder.Services.AddAutoMapper(typeof(EmployeeProfile));
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
