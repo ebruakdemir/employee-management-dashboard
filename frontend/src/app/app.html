@@ -1,0 +1,28 @@
+<h1>Employees</h1>
+
+<p *ngIf="isLoading">
+  Employees are loading...
+</p>
+
+<p *ngIf="errorMessage">
+  {{ errorMessage }}
+</p>
+
+<p
+  *ngIf="
+    !isLoading &&
+    !errorMessage &&
+    employees.length === 0
+  "
+>
+  No employees found.
+</p>
+
+<ul *ngIf="employees.length > 0">
+  <li *ngFor="let employee of employees">
+    {{ employee.firstName }}
+    {{ employee.lastName }}
+    -
+    {{ employee.department }}
+  </li>
+</ul>
