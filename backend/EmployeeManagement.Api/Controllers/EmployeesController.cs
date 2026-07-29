@@ -1,10 +1,6 @@
-using AutoMapper;
-using EmployeeManagement.Api.Data;
 using EmployeeManagement.Api.DTOs;
 using EmployeeManagement.Api.Interfaces;
-using EmployeeManagement.Api.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace EmployeeManagement.Api.Controllers;
 
@@ -12,46 +8,42 @@ namespace EmployeeManagement.Api.Controllers;
 [ApiController]
 public class EmployeesController : ControllerBase
 {
-    private readonly AppDbContext _context;
-    private readonly IMapper _mapper;
     private readonly IEmployeeService _employeeService;
 
     public EmployeesController(
-        AppDbContext context,
-        IMapper mapper,
         IEmployeeService employeeService)
     {
-        _context = context;
-        _mapper = mapper;
         _employeeService = employeeService;
     }
 
     // GET: api/employees
     [HttpGet]
-    public async Task<ActionResult<List<EmployeeResponseDto>>> GetEmployees()
+    public async Task<ActionResult<PagedResult<EmployeeResponseDto>>>
+        GetEmployees(
+            [FromQuery] EmployeeQueryParameters queryParameters)
     {
-        List<EmployeeResponseDto> employees =
-            await _employeeService.GetAllAsync();
+        PagedResult<EmployeeResponseDto> result =
+            await _employeeService.GetAllAsync(queryParameters);
 
-        return Ok(employees);
+        return Ok(result);
     }
 
     // GET: api/employees/5
     [HttpGet("{id}")]
     public async Task<ActionResult<EmployeeResponseDto>> GetEmployee(int id)
     {
-        Employee? employee =
-            await _context.Employees.FindAsync(id);
+        EmployeeResponseDto? employee =
+            await _employeeService.GetByIdAsync(id);
 
         if (employee is null)
         {
-            return NotFound();
+            return NotFound(new
+            {
+                message = $"Employee with id {id} was not found."
+            });
         }
 
-        EmployeeResponseDto response =
-            _mapper.Map<EmployeeResponseDto>(employee);
-
-        return Ok(response);
+        return Ok(employee);
     }
 
     // POST: api/employees
@@ -59,10 +51,10 @@ public class EmployeesController : ControllerBase
     public async Task<ActionResult<EmployeeResponseDto>> CreateEmployee(
         CreateEmployeeDto createEmployeeDto)
     {
-        bool emailExists = await _context.Employees.AnyAsync(
-            employee => employee.Email == createEmployeeDto.Email);
+        EmployeeResponseDto? createdEmployee =
+            await _employeeService.CreateAsync(createEmployeeDto);
 
-        if (emailExists)
+        if (createdEmployee is null)
         {
             return Conflict(new
             {
@@ -70,20 +62,10 @@ public class EmployeesController : ControllerBase
             });
         }
 
-        Employee employee =
-            _mapper.Map<Employee>(createEmployeeDto);
-
-        _context.Employees.Add(employee);
-
-        await _context.SaveChangesAsync();
-
-        EmployeeResponseDto response =
-            _mapper.Map<EmployeeResponseDto>(employee);
-
         return CreatedAtAction(
             nameof(GetEmployee),
-            new { id = employee.Id },
-            response);
+            new { id = createdEmployee.Id },
+            createdEmployee);
     }
 
     // PUT: api/employees/5
@@ -92,30 +74,26 @@ public class EmployeesController : ControllerBase
         int id,
         UpdateEmployeeDto updateEmployeeDto)
     {
-        Employee? employee =
-            await _context.Employees.FindAsync(id);
+        EmployeeUpdateResult result =
+            await _employeeService.UpdateAsync(
+                id,
+                updateEmployeeDto);
 
-        if (employee is null)
+        if (result.EmployeeNotFound)
         {
-            return NotFound();
+            return NotFound(new
+            {
+                message = $"Employee with id {id} was not found."
+            });
         }
 
-        bool emailExists = await _context.Employees.AnyAsync(
-            existingEmployee =>
-                existingEmployee.Email == updateEmployeeDto.Email &&
-                existingEmployee.Id != id);
-
-        if (emailExists)
+        if (result.EmailAlreadyExists)
         {
             return Conflict(new
             {
                 message = "An employee with this email already exists."
             });
         }
-
-        _mapper.Map(updateEmployeeDto, employee);
-
-        await _context.SaveChangesAsync();
 
         return NoContent();
     }
@@ -124,17 +102,16 @@ public class EmployeesController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteEmployee(int id)
     {
-        Employee? employee =
-            await _context.Employees.FindAsync(id);
+        bool deleted =
+            await _employeeService.DeleteAsync(id);
 
-        if (employee is null)
+        if (!deleted)
         {
-            return NotFound();
+            return NotFound(new
+            {
+                message = $"Employee with id {id} was not found."
+            });
         }
-
-        _context.Employees.Remove(employee);
-
-        await _context.SaveChangesAsync();
 
         return NoContent();
     }

@@ -4,7 +4,8 @@ namespace EmployeeManagement.Api.Interfaces;
 
 public interface IEmployeeService
 {
-    Task<List<EmployeeResponseDto>> GetAllAsync();
+    Task<PagedResult<EmployeeResponseDto>> GetAllAsync(
+        EmployeeQueryParameters queryParameters);
 
     Task<EmployeeResponseDto?> GetByIdAsync(int id);
 
@@ -15,7 +16,7 @@ public interface IEmployeeService
         string email,
         int? excludedEmployeeId = null);
 
-    Task<bool> UpdateAsync(
+    Task<EmployeeUpdateResult> UpdateAsync(
         int id,
         UpdateEmployeeDto updateEmployeeDto);
 
