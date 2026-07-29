@@ -1,12 +1,19 @@
 using EmployeeManagement.Api.Data;
+using EmployeeManagement.Api.Interfaces;
 using EmployeeManagement.Api.Mapping;
+using EmployeeManagement.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-builder.Services.AddAutoMapper(typeof(EmployeeProfile));
+builder.Services.AddAutoMapper(
+    config => { },
+    typeof(EmployeeProfile)
+);
+
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
@@ -28,9 +35,6 @@ if (app.Environment.IsDevelopment())
         );
     });
 }
-
-// Şimdilik kapalı:
- // app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
