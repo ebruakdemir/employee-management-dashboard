@@ -4,113 +4,194 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EmployeeManagement.Api.Controllers;
 
-[Route("api/[controller]")]
 [ApiController]
+[Route("api/[controller]")]
 public class EmployeesController : ControllerBase
 {
     private readonly IEmployeeService _employeeService;
 
     public EmployeesController(
-        IEmployeeService employeeService)
+        IEmployeeService employeeService
+    )
     {
         _employeeService = employeeService;
     }
 
-    // GET: api/employees
     [HttpGet]
-    public async Task<ActionResult<PagedResult<EmployeeResponseDto>>>
-        GetEmployees(
-            [FromQuery] EmployeeQueryParameters queryParameters)
+    public async Task<
+        ActionResult<PagedResult<EmployeeResponseDto>>
+    > GetEmployees(
+        [FromQuery]
+        EmployeeQueryParameters queryParameters
+    )
     {
-        PagedResult<EmployeeResponseDto> result =
-            await _employeeService.GetAllAsync(queryParameters);
+        var result =
+            await _employeeService.GetEmployeesAsync(
+                queryParameters
+            );
 
         return Ok(result);
     }
 
-    // GET: api/employees/5
-    [HttpGet("{id}")]
-    public async Task<ActionResult<EmployeeResponseDto>> GetEmployee(int id)
+    /*
+     * Bu endpoint, {id:int} endpointinden önce
+     * veya sonra bulunabilir.
+     *
+     * Önemli olan aşağıdaki ID route'unun
+     * {id:int} olmasıdır.
+     */
+    [HttpGet("statistics")]
+    public async Task<
+        ActionResult<EmployeeStatisticsDto>
+    > GetStatistics()
     {
-        EmployeeResponseDto? employee =
-            await _employeeService.GetByIdAsync(id);
+        var statistics =
+            await _employeeService
+                .GetStatisticsAsync();
+
+        return Ok(statistics);
+    }
+
+    /*
+     * :int kısıtlaması çok önemli.
+     *
+     * Böylece:
+     * /api/Employees/4
+     * bu metoda gelir.
+     *
+     * Ancak:
+     * /api/Employees/statistics
+     * bu metoda gelmez.
+     */
+    [HttpGet("{id:int}")]
+    public async Task<
+        ActionResult<EmployeeResponseDto>
+    > GetEmployeeById(
+        int id
+    )
+    {
+        var employee =
+            await _employeeService
+                .GetEmployeeByIdAsync(id);
 
         if (employee is null)
         {
-            return NotFound(new
-            {
-                message = $"Employee with id {id} was not found."
-            });
+            return NotFound(
+                new
+                {
+                    message =
+                        "Employee could not be found."
+                }
+            );
         }
 
         return Ok(employee);
     }
 
-    // POST: api/employees
     [HttpPost]
-    public async Task<ActionResult<EmployeeResponseDto>> CreateEmployee(
-        CreateEmployeeDto createEmployeeDto)
+    public async Task<
+        ActionResult<EmployeeResponseDto>
+    > CreateEmployee(
+        [FromBody]
+        CreateEmployeeDto createEmployeeDto
+    )
     {
-        EmployeeResponseDto? createdEmployee =
-            await _employeeService.CreateAsync(createEmployeeDto);
-
-        if (createdEmployee is null)
+        try
         {
-            return Conflict(new
-            {
-                message = "An employee with this email already exists."
-            });
-        }
+            var createdEmployee =
+                await _employeeService
+                    .CreateEmployeeAsync(
+                        createEmployeeDto
+                    );
 
-        return CreatedAtAction(
-            nameof(GetEmployee),
-            new { id = createdEmployee.Id },
-            createdEmployee);
+            return CreatedAtAction(
+                nameof(GetEmployeeById),
+                new
+                {
+                    id = createdEmployee.Id
+                },
+                createdEmployee
+            );
+        }
+        catch (
+            InvalidOperationException exception
+        )
+        {
+            return Conflict(
+                new
+                {
+                    message =
+                        exception.Message
+                }
+            );
+        }
     }
 
-    // PUT: api/employees/5
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateEmployee(
-        int id,
-        UpdateEmployeeDto updateEmployeeDto)
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult>
+        UpdateEmployee(
+            int id,
+            [FromBody]
+            UpdateEmployeeDto updateEmployeeDto
+        )
     {
-        EmployeeUpdateResult result =
-            await _employeeService.UpdateAsync(
-                id,
-                updateEmployeeDto);
+        var result =
+            await _employeeService
+                .UpdateEmployeeAsync(
+                    id,
+                    updateEmployeeDto
+                );
 
-        if (result.EmployeeNotFound)
+        return result switch
         {
-            return NotFound(new
-            {
-                message = $"Employee with id {id} was not found."
-            });
-        }
+            EmployeeUpdateResult.Success =>
+                NoContent(),
 
-        if (result.EmailAlreadyExists)
-        {
-            return Conflict(new
-            {
-                message = "An employee with this email already exists."
-            });
-        }
+            EmployeeUpdateResult.NotFound =>
+                NotFound(
+                    new
+                    {
+                        message =
+                            "Employee could not be found."
+                    }
+                ),
 
-        return NoContent();
+            EmployeeUpdateResult.EmailConflict =>
+                Conflict(
+                    new
+                    {
+                        message =
+                            "An employee with this email already exists."
+                    }
+                ),
+
+            _ =>
+                StatusCode(
+                    StatusCodes
+                        .Status500InternalServerError
+                )
+        };
     }
 
-    // DELETE: api/employees/5
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteEmployee(int id)
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult>
+        DeleteEmployee(
+            int id
+        )
     {
-        bool deleted =
-            await _employeeService.DeleteAsync(id);
+        var deleted =
+            await _employeeService
+                .DeleteEmployeeAsync(id);
 
         if (!deleted)
         {
-            return NotFound(new
-            {
-                message = $"Employee with id {id} was not found."
-            });
+            return NotFound(
+                new
+                {
+                    message =
+                        "Employee could not be found."
+                }
+            );
         }
 
         return NoContent();

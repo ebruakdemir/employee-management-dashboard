@@ -2,21 +2,30 @@
   class="app-shell"
   [class.dark-theme]="isDarkMode"
 >
+  <!-- Toast notification -->
+
   <div
     class="toast"
     *ngIf="toastMessage"
     [class.toast-error]="toastType === 'error'"
+    role="status"
   >
     <span class="toast-symbol">
       {{ toastType === 'success' ? '✓' : '!' }}
     </span>
 
-    <span>{{ toastMessage }}</span>
+    <span>
+      {{ toastMessage }}
+    </span>
   </div>
+
+  <!-- Sidebar -->
 
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-icon">E</div>
+      <div class="brand-icon">
+        E
+      </div>
 
       <div>
         <strong>Emplora</strong>
@@ -71,7 +80,9 @@
 
       <div>
         <strong>Team tip</strong>
-        <p>Celebrate small wins together.</p>
+        <p>
+          Celebrate small wins together.
+        </p>
       </div>
     </div>
 
@@ -85,12 +96,20 @@
           {{ isDarkMode ? '☀' : '☾' }}
         </span>
 
-        {{ isDarkMode ? 'Light mode' : 'Dark mode' }}
+        {{
+          isDarkMode
+            ? 'Light mode'
+            : 'Dark mode'
+        }}
       </button>
     </div>
   </aside>
 
+  <!-- Main content -->
+
   <main class="main-content">
+    <!-- Dashboard header -->
+
     <header
       id="dashboard"
       class="topbar scroll-section"
@@ -100,7 +119,9 @@
           TEAM OVERVIEW
         </p>
 
-        <h1>Good to see you, Ebru ✿</h1>
+        <h1>
+          Good to see you, Ebru ✿
+        </h1>
 
         <p class="welcome-text">
           A calm place to manage your growing team.
@@ -117,61 +138,118 @@
       </button>
     </header>
 
+    <!-- Company-wide statistics -->
+
     <section
       id="departments"
       class="stats-grid scroll-section"
     >
       <article class="stat-card stat-pink">
-        <div class="stat-icon">👥</div>
+        <div class="stat-icon">
+          👥
+        </div>
 
         <div>
           <span>Total employees</span>
-          <strong>{{ totalCount }}</strong>
-          <small>All registered team members</small>
+
+          <strong>
+            {{
+              isStatisticsLoading
+                ? '...'
+                : statistics.totalEmployees
+            }}
+          </strong>
+
+          <small>
+            All registered team members
+          </small>
         </div>
       </article>
 
       <article class="stat-card stat-mint">
-        <div class="stat-icon">✓</div>
+        <div class="stat-icon">
+          ✓
+        </div>
 
         <div>
           <span>Active employees</span>
-          <strong>{{ activeEmployeeCount }}</strong>
-          <small>{{ activePercentage }}% active this page</small>
+
+          <strong>
+            {{
+              isStatisticsLoading
+                ? '...'
+                : statistics.activeEmployees
+            }}
+          </strong>
+
+          <small>
+            {{
+              isStatisticsLoading
+                ? 'Loading company data'
+                : globalActivePercentage +
+                  '% of all employees'
+            }}
+          </small>
         </div>
       </article>
 
       <article class="stat-card stat-lavender">
-        <div class="stat-icon">🏢</div>
+        <div class="stat-icon">
+          🏢
+        </div>
 
         <div>
           <span>Departments</span>
-          <strong>{{ departmentCount }}</strong>
-          <small>On the current page</small>
+
+          <strong>
+            {{
+              isStatisticsLoading
+                ? '...'
+                : statistics.departmentCount
+            }}
+          </strong>
+
+          <small>
+            Across the whole company
+          </small>
         </div>
       </article>
 
       <article class="stat-card stat-peach">
-        <div class="stat-icon">£</div>
+        <div class="stat-icon">
+          £
+        </div>
 
         <div>
           <span>Average salary</span>
 
           <strong>
-            {{
-              averageSalary
-                | currency:
-                  'GBP':
-                  'symbol':
-                  '1.0-0':
-                  'en-GB'
-            }}
+            <ng-container
+              *ngIf="!isStatisticsLoading; else salaryLoading"
+            >
+              {{
+                statistics.averageSalary
+                  | currency:
+                    'GBP':
+                    'symbol':
+                    '1.0-0':
+                    'en-GB'
+              }}
+            </ng-container>
+
+            <ng-template #salaryLoading>
+              ...
+            </ng-template>
           </strong>
 
-          <small>Current-page average</small>
+          <small>
+            Company-wide average
+          </small>
         </div>
       </article>
     </section>
+
+    <!-- Employee directory -->
 
     <section
       id="employees"
@@ -183,7 +261,9 @@
             TEAM DIRECTORY
           </p>
 
-          <h2>Meet the team ♡</h2>
+          <h2>
+            Meet the team ♡
+          </h2>
 
           <span>
             {{ filteredEmployees.length }}
@@ -197,6 +277,8 @@
         </div>
       </div>
 
+      <!-- Search and filters -->
+
       <div class="controls">
         <div class="search-box">
           <span>⌕</span>
@@ -204,12 +286,14 @@
           <input
             type="text"
             placeholder="Search employees..."
+            aria-label="Search employees"
             [(ngModel)]="searchTerm"
           />
         </div>
 
         <select
           [(ngModel)]="selectedDepartment"
+          aria-label="Filter by department"
         >
           <option value="">
             All departments
@@ -223,7 +307,10 @@
           </option>
         </select>
 
-        <select [(ngModel)]="sortField">
+        <select
+          [(ngModel)]="sortField"
+          aria-label="Sort employees"
+        >
           <option value="name">
             Sort by name
           </option>
@@ -241,7 +328,10 @@
           </option>
         </select>
 
-        <select [(ngModel)]="sortDirection">
+        <select
+          [(ngModel)]="sortDirection"
+          aria-label="Sort direction"
+        >
           <option value="asc">
             Ascending
           </option>
@@ -260,20 +350,30 @@
         </button>
       </div>
 
+      <!-- Loading state -->
+
       <div
         class="loading-state"
         *ngIf="isLoading"
       >
         <div class="spinner"></div>
-        <p>Loading employees...</p>
+
+        <p>
+          Loading employees...
+        </p>
       </div>
+
+      <!-- Error state -->
 
       <div
         class="error-state"
-        *ngIf="errorMessage"
+        *ngIf="!isLoading && errorMessage"
       >
         <div>!</div>
-        <p>{{ errorMessage }}</p>
+
+        <p>
+          {{ errorMessage }}
+        </p>
 
         <button
           type="button"
@@ -282,6 +382,8 @@
           Try again
         </button>
       </div>
+
+      <!-- Empty state -->
 
       <div
         class="empty-state"
@@ -292,12 +394,17 @@
         "
       >
         <div>⌕</div>
-        <h3>No employees found</h3>
+
+        <h3>
+          No employees found
+        </h3>
 
         <p>
           Try changing your search or filter.
         </p>
       </div>
+
+      <!-- Employee cards -->
 
       <div
         class="employee-grid"
@@ -323,7 +430,9 @@
 
             <span
               class="employee-status"
-              [class.status-inactive]="!employee.isActive"
+              [class.status-inactive]="
+                !employee.isActive
+              "
             >
               <i></i>
 
@@ -341,7 +450,9 @@
               {{ employee.lastName }}
             </h3>
 
-            <p>{{ employee.position }}</p>
+            <p>
+              {{ employee.position }}
+            </p>
 
             <span class="department-pill">
               {{ employee.department }}
@@ -351,7 +462,10 @@
           <div class="employee-details">
             <div>
               <span>Email</span>
-              <strong>{{ employee.email }}</strong>
+
+              <strong>
+                {{ employee.email }}
+              </strong>
             </div>
 
             <div>
@@ -393,8 +507,8 @@
             <button
               class="card-delete-button"
               type="button"
-              (click)="openDeleteModal(employee)"
               aria-label="Delete employee"
+              (click)="openDeleteModal(employee)"
             >
               ×
             </button>
@@ -402,9 +516,15 @@
         </article>
       </div>
 
+      <!-- Pagination -->
+
       <div
         class="pagination"
-        *ngIf="totalPages > 0"
+        *ngIf="
+          !isLoading &&
+          !errorMessage &&
+          totalPages > 0
+        "
       >
         <div>
           Page {{ currentPage }}
@@ -415,6 +535,7 @@
           <select
             [(ngModel)]="pageSize"
             (ngModelChange)="changePageSize()"
+            aria-label="Employees per page"
           >
             <option [ngValue]="6">
               6 per page
@@ -431,6 +552,7 @@
 
           <button
             type="button"
+            aria-label="Previous page"
             (click)="previousPage()"
             [disabled]="currentPage === 1"
           >
@@ -441,6 +563,7 @@
             *ngFor="let page of pageNumbers"
             type="button"
             [class.active]="page === currentPage"
+            [attr.aria-label]="'Go to page ' + page"
             (click)="goToPage(page)"
           >
             {{ page }}
@@ -448,14 +571,19 @@
 
           <button
             type="button"
+            aria-label="Next page"
             (click)="nextPage()"
-            [disabled]="currentPage === totalPages"
+            [disabled]="
+              currentPage === totalPages
+            "
           >
             ›
           </button>
         </div>
       </div>
     </section>
+
+    <!-- Reports -->
 
     <section
       id="reports"
@@ -467,10 +595,12 @@
             QUICK REPORTS
           </p>
 
-          <h2>Team insights ✦</h2>
+          <h2>
+            Team insights ✦
+          </h2>
 
           <span>
-            A simple summary of your current page.
+            A company-wide overview of your team.
           </span>
         </div>
       </div>
@@ -478,49 +608,90 @@
       <div class="report-grid">
         <article class="report-card report-pink">
           <span>Active rate</span>
-          <strong>{{ activePercentage }}%</strong>
-          <small>Employees currently active</small>
+
+          <strong>
+            {{
+              isStatisticsLoading
+                ? '...'
+                : globalActivePercentage + '%'
+            }}
+          </strong>
+
+          <small>
+            Employees currently active
+          </small>
         </article>
 
         <article class="report-card report-mint">
           <span>Departments</span>
-          <strong>{{ departmentCount }}</strong>
-          <small>Teams represented here</small>
+
+          <strong>
+            {{
+              isStatisticsLoading
+                ? '...'
+                : statistics.departmentCount
+            }}
+          </strong>
+
+          <small>
+            Teams across the company
+          </small>
         </article>
 
         <article class="report-card report-lavender">
           <span>Average salary</span>
 
           <strong>
-            {{
-              averageSalary
-                | currency:
-                  'GBP':
-                  'symbol':
-                  '1.0-0':
-                  'en-GB'
-            }}
+            <ng-container
+              *ngIf="!isStatisticsLoading; else reportSalaryLoading"
+            >
+              {{
+                statistics.averageSalary
+                  | currency:
+                    'GBP':
+                    'symbol':
+                    '1.0-0':
+                    'en-GB'
+              }}
+            </ng-container>
+
+            <ng-template #reportSalaryLoading>
+              ...
+            </ng-template>
           </strong>
 
-          <small>Average for this page</small>
+          <small>
+            Company-wide salary average
+          </small>
         </article>
       </div>
 
       <div class="department-report">
-        <h3>Departments represented</h3>
+        <h3>
+          Departments on this page
+        </h3>
 
-        <div class="department-tags">
+        <div
+          class="department-tags"
+          *ngIf="departments.length > 0"
+        >
           <span
             *ngFor="let department of departments"
           >
             {{ department }}
           </span>
         </div>
+
+        <p
+          *ngIf="departments.length === 0"
+        >
+          No departments are available on this page.
+        </p>
       </div>
     </section>
   </main>
 
-  <!-- Create / Edit modal -->
+  <!-- Create / Edit employee modal -->
 
   <div
     class="modal-backdrop"
@@ -529,13 +700,18 @@
   >
     <section
       class="modal-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="employeeModalTitle"
       (click)="$event.stopPropagation()"
     >
       <div class="modal-header">
         <div>
-          <span>EMPLOYEE PROFILE</span>
+          <span>
+            EMPLOYEE PROFILE
+          </span>
 
-          <h2>
+          <h2 id="employeeModalTitle">
             {{
               isEditMode
                 ? 'Edit employee'
@@ -554,7 +730,9 @@
 
         <button
           type="button"
+          aria-label="Close employee modal"
           (click)="closeEmployeeModal()"
+          [disabled]="isSavingEmployee"
         >
           ×
         </button>
@@ -585,7 +763,18 @@
                 [(ngModel)]="
                   employeeFormData.firstName
                 "
+                #firstName="ngModel"
               />
+
+              <small
+                class="field-error"
+                *ngIf="
+                  firstName.invalid &&
+                  firstName.touched
+                "
+              >
+                First name is required.
+              </small>
             </label>
 
             <label>
@@ -599,7 +788,18 @@
                 [(ngModel)]="
                   employeeFormData.lastName
                 "
+                #lastName="ngModel"
               />
+
+              <small
+                class="field-error"
+                *ngIf="
+                  lastName.invalid &&
+                  lastName.touched
+                "
+              >
+                Last name is required.
+              </small>
             </label>
 
             <label class="full-field">
@@ -610,10 +810,22 @@
                 type="email"
                 required
                 email
+                maxlength="150"
                 [(ngModel)]="
                   employeeFormData.email
                 "
+                #email="ngModel"
               />
+
+              <small
+                class="field-error"
+                *ngIf="
+                  email.invalid &&
+                  email.touched
+                "
+              >
+                Enter a valid email address.
+              </small>
             </label>
 
             <label>
@@ -623,10 +835,22 @@
                 name="department"
                 type="text"
                 required
+                maxlength="100"
                 [(ngModel)]="
                   employeeFormData.department
                 "
+                #department="ngModel"
               />
+
+              <small
+                class="field-error"
+                *ngIf="
+                  department.invalid &&
+                  department.touched
+                "
+              >
+                Department is required.
+              </small>
             </label>
 
             <label>
@@ -636,10 +860,22 @@
                 name="position"
                 type="text"
                 required
+                maxlength="100"
                 [(ngModel)]="
                   employeeFormData.position
                 "
+                #position="ngModel"
               />
+
+              <small
+                class="field-error"
+                *ngIf="
+                  position.invalid &&
+                  position.touched
+                "
+              >
+                Position is required.
+              </small>
             </label>
 
             <label>
@@ -650,10 +886,22 @@
                 type="number"
                 required
                 min="0"
+                step="0.01"
                 [(ngModel)]="
                   employeeFormData.salary
                 "
+                #salary="ngModel"
               />
+
+              <small
+                class="field-error"
+                *ngIf="
+                  salary.invalid &&
+                  salary.touched
+                "
+              >
+                Salary must be zero or greater.
+              </small>
             </label>
 
             <label>
@@ -666,7 +914,18 @@
                 [(ngModel)]="
                   employeeFormData.hireDate
                 "
+                #hireDate="ngModel"
               />
+
+              <small
+                class="field-error"
+                *ngIf="
+                  hireDate.invalid &&
+                  hireDate.touched
+                "
+              >
+                Hire date is required.
+              </small>
             </label>
 
             <label
@@ -680,7 +939,9 @@
                 "
               />
 
-              <span>Employee is active</span>
+              <span>
+                Employee is active
+              </span>
             </label>
           </div>
         </div>
@@ -690,6 +951,7 @@
             class="cancel-button"
             type="button"
             (click)="closeEmployeeModal()"
+            [disabled]="isSavingEmployee"
           >
             Cancel
           </button>
@@ -712,7 +974,7 @@
     </section>
   </div>
 
-  <!-- Delete modal -->
+  <!-- Delete confirmation modal -->
 
   <div
     class="modal-backdrop"
@@ -721,11 +983,18 @@
   >
     <section
       class="delete-card"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="deleteEmployeeTitle"
       (click)="$event.stopPropagation()"
     >
-      <div class="delete-symbol">!</div>
+      <div class="delete-symbol">
+        !
+      </div>
 
-      <h2>Delete employee?</h2>
+      <h2 id="deleteEmployeeTitle">
+        Delete employee?
+      </h2>
 
       <p>
         You are about to delete
@@ -745,6 +1014,7 @@
           class="cancel-button"
           type="button"
           (click)="closeDeleteModal()"
+          [disabled]="isDeletingEmployee"
         >
           Cancel
         </button>

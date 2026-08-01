@@ -12,10 +12,13 @@ import {
 import {
   CreateEmployee,
   Employee,
+  EmployeeStatistics,
   UpdateEmployee
 } from './models/employee';
 
-import { EmployeeService } from './services/employee.service';
+import {
+  EmployeeService
+} from './services/employee.service';
 
 type SortField =
   | 'name'
@@ -23,9 +26,13 @@ type SortField =
   | 'hireDate'
   | 'salary';
 
-type SortDirection = 'asc' | 'desc';
+type SortDirection =
+  | 'asc'
+  | 'desc';
 
-type ToastType = 'success' | 'error';
+type ToastType =
+  | 'success'
+  | 'error';
 
 type DashboardSection =
   | 'dashboard'
@@ -46,7 +53,16 @@ type DashboardSection =
 export class App implements OnInit {
   employees: Employee[] = [];
 
+  statistics: EmployeeStatistics = {
+    totalEmployees: 0,
+    activeEmployees: 0,
+    departmentCount: 0,
+    averageSalary: 0
+  };
+
   isLoading = false;
+  isStatisticsLoading = false;
+
   errorMessage = '';
 
   searchTerm = '';
@@ -60,39 +76,54 @@ export class App implements OnInit {
   totalCount = 0;
   totalPages = 0;
 
-  activeSection: DashboardSection = 'dashboard';
+  activeSection: DashboardSection =
+    'dashboard';
+
   isDarkMode = false;
 
   showEmployeeModal = false;
   isSavingEmployee = false;
   employeeFormError = '';
 
-  editingEmployeeId: number | null = null;
+  editingEmployeeId: number | null =
+    null;
 
   employeeFormData: CreateEmployee =
     this.createEmptyEmployee();
 
   showDeleteModal = false;
-  employeeToDelete: Employee | null = null;
+
+  employeeToDelete: Employee | null =
+    null;
+
   isDeletingEmployee = false;
 
   toastMessage = '';
-  toastType: ToastType = 'success';
 
-  private toastTimer?: ReturnType<typeof setTimeout>;
+  toastType: ToastType =
+    'success';
+
+  private toastTimer?:
+    ReturnType<typeof setTimeout>;
 
   constructor(
-    private employeeService: EmployeeService,
-    private changeDetectorRef: ChangeDetectorRef
+    private employeeService:
+      EmployeeService,
+
+    private changeDetectorRef:
+      ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.loadTheme();
     this.loadEmployees();
+    this.loadStatistics();
   }
 
   get isEditMode(): boolean {
-    return this.editingEmployeeId !== null;
+    return (
+      this.editingEmployeeId !== null
+    );
   }
 
   get activeEmployeeCount(): number {
@@ -114,15 +145,38 @@ export class App implements OnInit {
     );
   }
 
+  get globalActivePercentage():
+    number {
+    if (
+      this.statistics.totalEmployees === 0
+    ) {
+      return 0;
+    }
+
+    return Math.round(
+      (
+        this.statistics.activeEmployees /
+        this.statistics.totalEmployees
+      ) * 100
+    );
+  }
+
   get departments(): string[] {
     return [
       ...new Set(
         this.employees
-          .map(employee => employee.department)
-          .filter(department => Boolean(department))
+          .map(
+            employee =>
+              employee.department
+          )
+          .filter(
+            department =>
+              Boolean(department)
+          )
       )
-    ].sort((first, second) =>
-      first.localeCompare(second)
+    ].sort(
+      (first, second) =>
+        first.localeCompare(second)
     );
   }
 
@@ -137,48 +191,65 @@ export class App implements OnInit {
 
     const totalSalary =
       this.employees.reduce(
-        (total, employee) =>
+        (
+          total,
+          employee
+        ) =>
           total + employee.salary,
         0
       );
 
-    return totalSalary / this.employees.length;
+    return (
+      totalSalary /
+      this.employees.length
+    );
   }
 
-  get filteredEmployees(): Employee[] {
+  get filteredEmployees():
+    Employee[] {
     const search =
-      this.searchTerm.trim().toLowerCase();
+      this.searchTerm
+        .trim()
+        .toLowerCase();
 
     const filtered =
-      this.employees.filter(employee => {
-        const matchesSearch =
-          !search ||
-          employee.firstName
-            ?.toLowerCase()
-            .includes(search) ||
-          employee.lastName
-            ?.toLowerCase()
-            .includes(search) ||
-          employee.email
-            ?.toLowerCase()
-            .includes(search) ||
-          employee.department
-            ?.toLowerCase()
-            .includes(search) ||
-          employee.position
-            ?.toLowerCase()
-            .includes(search);
+      this.employees.filter(
+        employee => {
+          const matchesSearch =
+            !search ||
 
-        const matchesDepartment =
-          !this.selectedDepartment ||
-          employee.department ===
-            this.selectedDepartment;
+            employee.firstName
+              ?.toLowerCase()
+              .includes(search) ||
 
-        return (
-          matchesSearch &&
-          matchesDepartment
-        );
-      });
+            employee.lastName
+              ?.toLowerCase()
+              .includes(search) ||
+
+            employee.email
+              ?.toLowerCase()
+              .includes(search) ||
+
+            employee.department
+              ?.toLowerCase()
+              .includes(search) ||
+
+            employee.position
+              ?.toLowerCase()
+              .includes(search);
+
+          const matchesDepartment =
+            !this.selectedDepartment ||
+
+            employee.department ===
+              this.selectedDepartment;
+
+          return (
+            matchesSearch &&
+            matchesDepartment
+          );
+        }
+      );
 
     return [...filtered].sort(
       (
@@ -194,8 +265,13 @@ export class App implements OnInit {
 
   get pageNumbers(): number[] {
     return Array.from(
-      { length: this.totalPages },
-      (_, index) => index + 1
+      {
+        length: this.totalPages
+      },
+      (
+        _,
+        index
+      ) => index + 1
     );
   }
 
@@ -213,13 +289,22 @@ export class App implements OnInit {
       )
       .subscribe({
         next: response => {
-          this.employees = response.items;
-          this.totalCount = response.totalCount;
-          this.totalPages = response.totalPages;
-          this.currentPage = response.page;
+          this.employees =
+            response.items;
+
+          this.totalCount =
+            response.totalCount;
+
+          this.totalPages =
+            response.totalPages;
+
+          this.currentPage =
+            response.page;
 
           this.isLoading = false;
-          this.changeDetectorRef.markForCheck();
+
+          this.changeDetectorRef
+            .markForCheck();
         },
 
         error: error => {
@@ -232,7 +317,46 @@ export class App implements OnInit {
             'Employees could not be loaded.';
 
           this.isLoading = false;
-          this.changeDetectorRef.markForCheck();
+
+          this.changeDetectorRef
+            .markForCheck();
+        }
+      });
+  }
+
+  loadStatistics(): void {
+    this.isStatisticsLoading = true;
+
+    this.employeeService
+      .getStatistics()
+      .subscribe({
+        next: statistics => {
+          this.statistics =
+            statistics;
+
+          this.isStatisticsLoading =
+            false;
+
+          this.changeDetectorRef
+            .markForCheck();
+        },
+
+        error: error => {
+          console.error(
+            'Statistics loading error:',
+            error
+          );
+
+          this.isStatisticsLoading =
+            false;
+
+          this.showToast(
+            'Dashboard statistics could not be loaded.',
+            'error'
+          );
+
+          this.changeDetectorRef
+            .markForCheck();
         }
       });
   }
@@ -243,7 +367,9 @@ export class App implements OnInit {
     this.activeSection = section;
 
     const target =
-      document.getElementById(section);
+      document.getElementById(
+        section
+      );
 
     target?.scrollIntoView({
       behavior: 'smooth',
@@ -252,11 +378,14 @@ export class App implements OnInit {
   }
 
   toggleTheme(): void {
-    this.isDarkMode = !this.isDarkMode;
+    this.isDarkMode =
+      !this.isDarkMode;
 
     localStorage.setItem(
       'employee-dashboard-theme',
-      this.isDarkMode ? 'dark' : 'light'
+      this.isDarkMode
+        ? 'dark'
+        : 'light'
     );
   }
 
@@ -274,29 +403,54 @@ export class App implements OnInit {
       this.createEmptyEmployee();
 
     this.employeeFormError = '';
+
     this.showEmployeeModal = true;
 
-    this.changeDetectorRef.markForCheck();
+    this.changeDetectorRef
+      .markForCheck();
   }
 
-  openEditModal(employee: Employee): void {
-    this.editingEmployeeId = employee.id;
+  openEditModal(
+    employee: Employee
+  ): void {
+    this.editingEmployeeId =
+      employee.id;
 
     this.employeeFormData = {
-      firstName: employee.firstName,
-      lastName: employee.lastName,
-      email: employee.email,
-      department: employee.department,
-      position: employee.position,
-      salary: employee.salary,
-      hireDate: employee.hireDate.substring(0, 10),
-      isActive: employee.isActive
+      firstName:
+        employee.firstName,
+
+      lastName:
+        employee.lastName,
+
+      email:
+        employee.email,
+
+      department:
+        employee.department,
+
+      position:
+        employee.position,
+
+      salary:
+        employee.salary,
+
+      hireDate:
+        employee.hireDate.substring(
+          0,
+          10
+        ),
+
+      isActive:
+        employee.isActive
     };
 
     this.employeeFormError = '';
+
     this.showEmployeeModal = true;
 
-    this.changeDetectorRef.markForCheck();
+    this.changeDetectorRef
+      .markForCheck();
   }
 
   closeEmployeeModal(): void {
@@ -308,10 +462,13 @@ export class App implements OnInit {
     this.employeeFormError = '';
     this.editingEmployeeId = null;
 
-    this.changeDetectorRef.markForCheck();
+    this.changeDetectorRef
+      .markForCheck();
   }
 
-  saveEmployee(form: NgForm): void {
+  saveEmployee(
+    form: NgForm
+  ): void {
     if (
       form.invalid ||
       this.isSavingEmployee
@@ -328,11 +485,16 @@ export class App implements OnInit {
     this.createEmployee(form);
   }
 
-  openDeleteModal(employee: Employee): void {
-    this.employeeToDelete = employee;
+  openDeleteModal(
+    employee: Employee
+  ): void {
+    this.employeeToDelete =
+      employee;
+
     this.showDeleteModal = true;
 
-    this.changeDetectorRef.markForCheck();
+    this.changeDetectorRef
+      .markForCheck();
   }
 
   closeDeleteModal(): void {
@@ -343,7 +505,8 @@ export class App implements OnInit {
     this.employeeToDelete = null;
     this.showDeleteModal = false;
 
-    this.changeDetectorRef.markForCheck();
+    this.changeDetectorRef
+      .markForCheck();
   }
 
   confirmDeleteEmployee(): void {
@@ -363,9 +526,14 @@ export class App implements OnInit {
       .deleteEmployee(employeeId)
       .subscribe({
         next: () => {
-          this.isDeletingEmployee = false;
-          this.showDeleteModal = false;
-          this.employeeToDelete = null;
+          this.isDeletingEmployee =
+            false;
+
+          this.showDeleteModal =
+            false;
+
+          this.employeeToDelete =
+            null;
 
           if (
             this.employees.length === 1 &&
@@ -375,6 +543,7 @@ export class App implements OnInit {
           }
 
           this.loadEmployees();
+          this.loadStatistics();
 
           this.showToast(
             'Employee deleted successfully.'
@@ -387,7 +556,8 @@ export class App implements OnInit {
             error
           );
 
-          this.isDeletingEmployee = false;
+          this.isDeletingEmployee =
+            false;
 
           this.showToast(
             error.status === 404
@@ -396,7 +566,8 @@ export class App implements OnInit {
             'error'
           );
 
-          this.changeDetectorRef.markForCheck();
+          this.changeDetectorRef
+            .markForCheck();
         }
       });
   }
@@ -409,18 +580,26 @@ export class App implements OnInit {
     this.toastType = type;
 
     if (this.toastTimer) {
-      clearTimeout(this.toastTimer);
+      clearTimeout(
+        this.toastTimer
+      );
     }
 
-    this.toastTimer = setTimeout(() => {
-      this.toastMessage = '';
-      this.changeDetectorRef.markForCheck();
-    }, 3000);
+    this.toastTimer =
+      setTimeout(() => {
+        this.toastMessage = '';
 
-    this.changeDetectorRef.markForCheck();
+        this.changeDetectorRef
+          .markForCheck();
+      }, 3000);
+
+    this.changeDetectorRef
+      .markForCheck();
   }
 
-  goToPage(page: number): void {
+  goToPage(
+    page: number
+  ): void {
     if (
       page < 1 ||
       page > this.totalPages ||
@@ -430,6 +609,7 @@ export class App implements OnInit {
     }
 
     this.currentPage = page;
+
     this.loadEmployees();
   }
 
@@ -447,15 +627,20 @@ export class App implements OnInit {
 
   changePageSize(): void {
     this.currentPage = 1;
+
     this.loadEmployees();
   }
 
-  getInitials(employee: Employee): string {
+  getInitials(
+    employee: Employee
+  ): string {
     const firstInitial =
-      employee.firstName?.charAt(0) ?? '';
+      employee.firstName
+        ?.charAt(0) ?? '';
 
     const lastInitial =
-      employee.lastName?.charAt(0) ?? '';
+      employee.lastName
+        ?.charAt(0) ?? '';
 
     return (
       `${firstInitial}${lastInitial}`
@@ -463,7 +648,9 @@ export class App implements OnInit {
     );
   }
 
-  getAvatarClass(employee: Employee): string {
+  getAvatarClass(
+    employee: Employee
+  ): string {
     const classes = [
       'avatar-lavender',
       'avatar-mint',
@@ -473,29 +660,43 @@ export class App implements OnInit {
     ];
 
     return classes[
-      Math.abs(employee.id) % classes.length
+      Math.abs(employee.id) %
+        classes.length
     ];
   }
 
-  private createEmployee(form: NgForm): void {
+  private createEmployee(
+    form: NgForm
+  ): void {
     this.isSavingEmployee = true;
     this.employeeFormError = '';
 
     this.employeeService
-      .createEmployee(this.employeeFormData)
+      .createEmployee(
+        this.employeeFormData
+      )
       .subscribe({
         next: () => {
-          this.isSavingEmployee = false;
-          this.showEmployeeModal = false;
+          this.isSavingEmployee =
+            false;
+
+          this.showEmployeeModal =
+            false;
 
           const emptyEmployee =
             this.createEmptyEmployee();
 
-          this.employeeFormData = emptyEmployee;
-          form.resetForm(emptyEmployee);
+          this.employeeFormData =
+            emptyEmployee;
+
+          form.resetForm(
+            emptyEmployee
+          );
 
           this.currentPage = 1;
+
           this.loadEmployees();
+          this.loadStatistics();
 
           this.showToast(
             'Employee created successfully.'
@@ -512,16 +713,19 @@ export class App implements OnInit {
   }
 
   private updateEmployee(): void {
-    if (this.editingEmployeeId === null) {
+    if (
+      this.editingEmployeeId === null
+    ) {
       return;
     }
 
     this.isSavingEmployee = true;
     this.employeeFormError = '';
 
-    const updateData: UpdateEmployee = {
-      ...this.employeeFormData
-    };
+    const updateData:
+      UpdateEmployee = {
+        ...this.employeeFormData
+      };
 
     this.employeeService
       .updateEmployee(
@@ -530,11 +734,17 @@ export class App implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.isSavingEmployee = false;
-          this.showEmployeeModal = false;
-          this.editingEmployeeId = null;
+          this.isSavingEmployee =
+            false;
+
+          this.showEmployeeModal =
+            false;
+
+          this.editingEmployeeId =
+            null;
 
           this.loadEmployees();
+          this.loadStatistics();
 
           this.showToast(
             'Employee updated successfully.'
@@ -580,7 +790,8 @@ export class App implements OnInit {
       'error'
     );
 
-    this.changeDetectorRef.markForCheck();
+    this.changeDetectorRef
+      .markForCheck();
   }
 
   private loadTheme(): void {
@@ -602,10 +813,12 @@ export class App implements OnInit {
       department: '',
       position: '',
       salary: 0,
+
       hireDate:
         new Date()
           .toISOString()
           .substring(0, 10),
+
       isActive: true
     };
   }
@@ -625,16 +838,20 @@ export class App implements OnInit {
           `${secondEmployee.firstName} ${secondEmployee.lastName}`;
 
         comparison =
-          firstName.localeCompare(secondName);
+          firstName.localeCompare(
+            secondName
+          );
 
         break;
       }
 
       case 'department':
         comparison =
-          firstEmployee.department.localeCompare(
-            secondEmployee.department
-          );
+          firstEmployee.department
+            .localeCompare(
+              secondEmployee.department
+            );
+
         break;
 
       case 'hireDate':
@@ -645,17 +862,21 @@ export class App implements OnInit {
           new Date(
             secondEmployee.hireDate
           ).getTime();
+
         break;
 
       case 'salary':
         comparison =
           firstEmployee.salary -
           secondEmployee.salary;
+
         break;
     }
 
-    return this.sortDirection === 'asc'
-      ? comparison
-      : -comparison;
+    return (
+      this.sortDirection === 'asc'
+        ? comparison
+        : -comparison
+    );
   }
 }

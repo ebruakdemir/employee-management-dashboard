@@ -8,6 +8,7 @@ import { Observable } from 'rxjs';
 import {
   CreateEmployee,
   Employee,
+  EmployeeStatistics,
   PagedResult,
   UpdateEmployee
 } from '../models/employee';
@@ -85,6 +86,12 @@ export class EmployeeService {
   ): Observable<void> {
     return this.http.delete<void>(
       `${this.apiUrl}/${id}`
+    );
+  }
+
+  getStatistics(): Observable<EmployeeStatistics> {
+    return this.http.get<EmployeeStatistics>(
+      `${this.apiUrl}/statistics`
     );
   }
 }

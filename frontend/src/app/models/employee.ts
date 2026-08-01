@@ -39,3 +39,10 @@ export interface Employee {
     pageSize: number;
     totalPages: number;
   }
+
+  export interface EmployeeStatistics {
+    totalEmployees: number;
+    activeEmployees: number;
+    departmentCount: number;
+    averageSalary: number;
+  }

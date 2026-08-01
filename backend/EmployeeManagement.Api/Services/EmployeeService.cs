@@ -1,4 +1,3 @@
-using AutoMapper;
 using EmployeeManagement.Api.Data;
 using EmployeeManagement.Api.DTOs;
 using EmployeeManagement.Api.Interfaces;
@@ -10,195 +9,266 @@ namespace EmployeeManagement.Api.Services;
 public class EmployeeService : IEmployeeService
 {
     private readonly AppDbContext _context;
-    private readonly IMapper _mapper;
 
     public EmployeeService(
-        AppDbContext context,
-        IMapper mapper)
+        AppDbContext context
+    )
     {
         _context = context;
-        _mapper = mapper;
     }
 
-    public async Task<PagedResult<EmployeeResponseDto>> GetAllAsync(
-        EmployeeQueryParameters queryParameters)
+    public async Task<PagedResult<EmployeeResponseDto>>
+        GetEmployeesAsync(
+            EmployeeQueryParameters queryParameters
+        )
     {
         IQueryable<Employee> query =
             _context.Employees.AsNoTracking();
 
-        if (!string.IsNullOrWhiteSpace(queryParameters.Search))
+        if (
+            !string.IsNullOrWhiteSpace(
+                queryParameters.Search
+            )
+        )
         {
-            string search = queryParameters.Search.Trim();
+            var search =
+                queryParameters.Search
+                    .Trim()
+                    .ToLower();
 
             query = query.Where(employee =>
-                employee.FirstName.Contains(search) ||
-                employee.LastName.Contains(search) ||
-                employee.Email.Contains(search));
+                employee.FirstName
+                    .ToLower()
+                    .Contains(search) ||
+
+                employee.LastName
+                    .ToLower()
+                    .Contains(search) ||
+
+                employee.Email
+                    .ToLower()
+                    .Contains(search) ||
+
+                employee.Department
+                    .ToLower()
+                    .Contains(search) ||
+
+                employee.Position
+                    .ToLower()
+                    .Contains(search)
+            );
         }
 
-        if (!string.IsNullOrWhiteSpace(queryParameters.Department))
+        if (
+            !string.IsNullOrWhiteSpace(
+                queryParameters.Department
+            )
+        )
         {
-            string department =
+            var department =
                 queryParameters.Department.Trim();
 
             query = query.Where(employee =>
-                employee.Department == department);
+                employee.Department == department
+            );
         }
 
-        query = queryParameters.Sort?.ToLower() switch
-        {
-            "name" =>
-                query.OrderBy(employee => employee.FirstName)
-                     .ThenBy(employee => employee.LastName),
+        query = ApplySorting(
+            query,
+            queryParameters.Sort
+        );
 
-            "name_desc" =>
-                query.OrderByDescending(employee => employee.FirstName)
-                     .ThenByDescending(employee => employee.LastName),
+        var totalCount =
+            await query.CountAsync();
 
-            "salary" =>
-                query.OrderBy(employee => employee.Salary),
-
-            "salary_desc" =>
-                query.OrderByDescending(employee => employee.Salary),
-
-            "hiredate" =>
-                query.OrderBy(employee => employee.HireDate),
-
-            "hiredate_desc" =>
-                query.OrderByDescending(employee => employee.HireDate),
-
-            _ =>
-                query.OrderBy(employee => employee.Id)
-        };
-
-        int page =
+        var page =
             queryParameters.Page < 1
                 ? 1
                 : queryParameters.Page;
 
-        int pageSize =
-            queryParameters.PageSize switch
-            {
-                < 1 => 10,
-                > 100 => 100,
-                _ => queryParameters.PageSize
-            };
+        var pageSize =
+            queryParameters.PageSize < 1
+                ? 10
+                : Math.Min(
+                    queryParameters.PageSize,
+                    100
+                );
 
-        int totalCount =
-            await query.CountAsync();
-
-        List<Employee> employees =
+        var items =
             await query
-                .Skip((page - 1) * pageSize)
+                .Skip(
+                    (page - 1) * pageSize
+                )
                 .Take(pageSize)
+                .Select(employee =>
+                    ToResponseDto(employee)
+                )
                 .ToListAsync();
-
-        List<EmployeeResponseDto> employeeDtos =
-            _mapper.Map<List<EmployeeResponseDto>>(employees);
-
-        int totalPages =
-            (int)Math.Ceiling(
-                totalCount / (double)pageSize);
 
         return new PagedResult<EmployeeResponseDto>
         {
-            Items = employeeDtos,
+            Items = items,
             TotalCount = totalCount,
             Page = page,
             PageSize = pageSize,
-            TotalPages = totalPages
+            TotalPages =
+                totalCount == 0
+                    ? 0
+                    : (int)Math.Ceiling(
+                        totalCount /
+                        (double)pageSize
+                    )
         };
     }
 
-    public async Task<EmployeeResponseDto?> GetByIdAsync(int id)
+    public async Task<EmployeeResponseDto?>
+        GetEmployeeByIdAsync(
+            int id
+        )
     {
-        Employee? employee =
+        var employee =
             await _context.Employees
                 .AsNoTracking()
-                .FirstOrDefaultAsync(employee =>
-                    employee.Id == id);
+                .FirstOrDefaultAsync(
+                    employee =>
+                        employee.Id == id
+                );
 
-        if (employee is null)
-        {
-            return null;
-        }
-
-        return _mapper.Map<EmployeeResponseDto>(employee);
+        return employee is null
+            ? null
+            : ToResponseDto(employee);
     }
 
-    public async Task<EmployeeResponseDto?> CreateAsync(
-        CreateEmployeeDto createEmployeeDto)
+    public async Task<EmployeeResponseDto>
+        CreateEmployeeAsync(
+            CreateEmployeeDto createEmployeeDto
+        )
     {
-        bool emailExists =
-            await EmailExistsAsync(createEmployeeDto.Email);
+        var emailExists =
+            await _context.Employees
+                .AnyAsync(employee =>
+                    employee.Email ==
+                    createEmployeeDto.Email
+                );
 
         if (emailExists)
         {
-            return null;
+            throw new InvalidOperationException(
+                "An employee with this email already exists."
+            );
         }
 
-        Employee employee =
-            _mapper.Map<Employee>(createEmployeeDto);
+        var employee = new Employee
+        {
+            FirstName =
+                createEmployeeDto.FirstName.Trim(),
+
+            LastName =
+                createEmployeeDto.LastName.Trim(),
+
+            Email =
+                createEmployeeDto.Email
+                    .Trim()
+                    .ToLower(),
+
+            Department =
+                createEmployeeDto.Department.Trim(),
+
+            Position =
+                createEmployeeDto.Position.Trim(),
+
+            Salary =
+                createEmployeeDto.Salary,
+
+            HireDate =
+                createEmployeeDto.HireDate,
+
+            IsActive =
+                createEmployeeDto.IsActive
+        };
 
         _context.Employees.Add(employee);
 
         await _context.SaveChangesAsync();
 
-        return _mapper.Map<EmployeeResponseDto>(employee);
+        return ToResponseDto(employee);
     }
 
-    public async Task<bool> EmailExistsAsync(
-        string email,
-        int? excludedEmployeeId = null)
+    public async Task<EmployeeUpdateResult>
+        UpdateEmployeeAsync(
+            int id,
+            UpdateEmployeeDto updateEmployeeDto
+        )
     {
-        return await _context.Employees.AnyAsync(employee =>
-            employee.Email == email &&
-            (!excludedEmployeeId.HasValue ||
-             employee.Id != excludedEmployeeId.Value));
-    }
-
-    public async Task<EmployeeUpdateResult> UpdateAsync(
-        int id,
-        UpdateEmployeeDto updateEmployeeDto)
-    {
-        Employee? employee =
-            await _context.Employees.FindAsync(id);
+        var employee =
+            await _context.Employees
+                .FirstOrDefaultAsync(
+                    employee =>
+                        employee.Id == id
+                );
 
         if (employee is null)
         {
-            return new EmployeeUpdateResult
-            {
-                EmployeeNotFound = true
-            };
+            return EmployeeUpdateResult.NotFound;
         }
 
-        bool emailExists =
-            await EmailExistsAsync(
-                updateEmployeeDto.Email,
-                id);
+        var normalizedEmail =
+            updateEmployeeDto.Email
+                .Trim()
+                .ToLower();
+
+        var emailExists =
+            await _context.Employees
+                .AnyAsync(otherEmployee =>
+                    otherEmployee.Id != id &&
+                    otherEmployee.Email ==
+                    normalizedEmail
+                );
 
         if (emailExists)
         {
-            return new EmployeeUpdateResult
-            {
-                EmailAlreadyExists = true
-            };
+            return EmployeeUpdateResult.EmailConflict;
         }
 
-        _mapper.Map(updateEmployeeDto, employee);
+        employee.FirstName =
+            updateEmployeeDto.FirstName.Trim();
+
+        employee.LastName =
+            updateEmployeeDto.LastName.Trim();
+
+        employee.Email =
+            normalizedEmail;
+
+        employee.Department =
+            updateEmployeeDto.Department.Trim();
+
+        employee.Position =
+            updateEmployeeDto.Position.Trim();
+
+        employee.Salary =
+            updateEmployeeDto.Salary;
+
+        employee.HireDate =
+            updateEmployeeDto.HireDate;
+
+        employee.IsActive =
+            updateEmployeeDto.IsActive;
 
         await _context.SaveChangesAsync();
 
-        return new EmployeeUpdateResult
-        {
-            IsSuccessful = true
-        };
+        return EmployeeUpdateResult.Success;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteEmployeeAsync(
+        int id
+    )
     {
-        Employee? employee =
-            await _context.Employees.FindAsync(id);
+        var employee =
+            await _context.Employees
+                .FirstOrDefaultAsync(
+                    employee =>
+                        employee.Id == id
+                );
 
         if (employee is null)
         {
@@ -210,5 +280,134 @@ public class EmployeeService : IEmployeeService
         await _context.SaveChangesAsync();
 
         return true;
+    }
+
+    public async Task<EmployeeStatisticsDto>
+        GetStatisticsAsync()
+    {
+        var totalEmployees =
+            await _context.Employees
+                .CountAsync();
+
+        var activeEmployees =
+            await _context.Employees
+                .CountAsync(employee =>
+                    employee.IsActive
+                );
+
+        var departmentCount =
+            await _context.Employees
+                .Where(employee =>
+                    employee.Department != null &&
+                    employee.Department != ""
+                )
+                .Select(employee =>
+                    employee.Department
+                )
+                .Distinct()
+                .CountAsync();
+
+        decimal averageSalary = 0;
+
+        if (totalEmployees > 0)
+        {
+            averageSalary =
+                await _context.Employees
+                    .AverageAsync(employee =>
+                        employee.Salary
+                    );
+        }
+
+        return new EmployeeStatisticsDto
+        {
+            TotalEmployees =
+                totalEmployees,
+
+            ActiveEmployees =
+                activeEmployees,
+
+            DepartmentCount =
+                departmentCount,
+
+            AverageSalary =
+                averageSalary
+        };
+    }
+
+    private static IQueryable<Employee>
+        ApplySorting(
+            IQueryable<Employee> query,
+            string? sort
+        )
+    {
+        return sort?.ToLower() switch
+        {
+            "name_desc" =>
+                query
+                    .OrderByDescending(employee =>
+                        employee.FirstName
+                    )
+                    .ThenByDescending(employee =>
+                        employee.LastName
+                    ),
+
+            "department" =>
+                query.OrderBy(employee =>
+                    employee.Department
+                ),
+
+            "department_desc" =>
+                query.OrderByDescending(employee =>
+                    employee.Department
+                ),
+
+            "hiredate" =>
+                query.OrderBy(employee =>
+                    employee.HireDate
+                ),
+
+            "hiredate_desc" =>
+                query.OrderByDescending(employee =>
+                    employee.HireDate
+                ),
+
+            "salary" =>
+                query.OrderBy(employee =>
+                    employee.Salary
+                ),
+
+            "salary_desc" =>
+                query.OrderByDescending(employee =>
+                    employee.Salary
+                ),
+
+            _ =>
+                query
+                    .OrderBy(employee =>
+                        employee.FirstName
+                    )
+                    .ThenBy(employee =>
+                        employee.LastName
+                    )
+        };
+    }
+
+    private static EmployeeResponseDto
+        ToResponseDto(
+            Employee employee
+        )
+    {
+        return new EmployeeResponseDto
+        {
+            Id = employee.Id,
+            FirstName = employee.FirstName,
+            LastName = employee.LastName,
+            Email = employee.Email,
+            Department = employee.Department,
+            Position = employee.Position,
+            Salary = employee.Salary,
+            HireDate = employee.HireDate,
+            IsActive = employee.IsActive
+        };
     }
 }
