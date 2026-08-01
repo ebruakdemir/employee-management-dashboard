@@ -1,8 +1,12 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpParams
+} from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import {
+  CreateEmployee,
   Employee,
   PagedResult
 } from '../models/employee';
@@ -14,7 +18,9 @@ export class EmployeeService {
   private readonly apiUrl =
     'http://localhost:5215/api/Employees';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient
+  ) {}
 
   getEmployees(
     search: string = '',
@@ -51,6 +57,15 @@ export class EmployeeService {
     return this.http.get<PagedResult<Employee>>(
       this.apiUrl,
       { params }
+    );
+  }
+
+  createEmployee(
+    employee: CreateEmployee
+  ): Observable<Employee> {
+    return this.http.post<Employee>(
+      this.apiUrl,
+      employee
     );
   }
 }

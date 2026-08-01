@@ -15,6 +15,7 @@
     <button
       class="primary-button"
       type="button"
+      (click)="openCreateModal()"
     >
       <span>+</span>
       Add employee
@@ -29,10 +30,7 @@
 
       <div>
         <p>Total employees</p>
-
-        <strong>
-          {{ totalCount }}
-        </strong>
+        <strong>{{ totalCount }}</strong>
       </div>
     </article>
 
@@ -43,10 +41,7 @@
 
       <div>
         <p>Active employees on this page</p>
-
-        <strong>
-          {{ activeEmployeeCount }}
-        </strong>
+        <strong>{{ activeEmployeeCount }}</strong>
       </div>
     </article>
   </section>
@@ -176,7 +171,7 @@
         filteredEmployees.length === 0
       "
     >
-      No employees match your search and filters on this page.
+      No employees match your search and filters.
     </div>
 
     <div
@@ -217,7 +212,6 @@
                       employee.firstName ||
                       'Unknown'
                     }}
-
                     {{
                       employee.lastName || ''
                     }}
@@ -285,11 +279,13 @@
     >
       <div class="pagination-info">
         <span>
-          Page {{ currentPage }} of {{ totalPages }}
+          Page {{ currentPage }}
+          of {{ totalPages }}
         </span>
 
         <span>
-          {{ totalCount }} total employees
+          {{ totalCount }}
+          total employees
         </span>
       </div>
 
@@ -324,7 +320,9 @@
           *ngFor="let page of pageNumbers"
           type="button"
           class="page-button"
-          [class.active]="page === currentPage"
+          [class.active]="
+            page === currentPage
+          "
           (click)="goToPage(page)"
         >
           {{ page }}
@@ -333,7 +331,9 @@
         <button
           type="button"
           (click)="nextPage()"
-          [disabled]="currentPage === totalPages"
+          [disabled]="
+            currentPage === totalPages
+          "
         >
           Next
         </button>
@@ -341,3 +341,286 @@
     </div>
   </section>
 </main>
+
+<!-- Add employee modal -->
+
+<div
+  class="modal-backdrop"
+  *ngIf="showCreateModal"
+  (click)="closeCreateModal()"
+>
+  <section
+    class="modal-card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="createEmployeeTitle"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="modal-header">
+      <div>
+        <p class="modal-eyebrow">
+          Employee Management
+        </p>
+
+        <h2 id="createEmployeeTitle">
+          Add employee
+        </h2>
+
+        <p>
+          Enter the new employee's information.
+        </p>
+      </div>
+
+      <button
+        class="modal-close-button"
+        type="button"
+        aria-label="Close modal"
+        (click)="closeCreateModal()"
+      >
+        ×
+      </button>
+    </div>
+
+    <form
+      #employeeForm="ngForm"
+      (ngSubmit)="saveEmployee(employeeForm)"
+      novalidate
+    >
+      <div class="modal-body">
+        <div
+          class="form-error-banner"
+          *ngIf="createEmployeeError"
+        >
+          {{ createEmployeeError }}
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="firstName">
+              First name
+            </label>
+
+            <input
+              id="firstName"
+              name="firstName"
+              type="text"
+              required
+              maxlength="50"
+              [(ngModel)]="newEmployee.firstName"
+              #firstName="ngModel"
+              placeholder="Ebru"
+            />
+
+            <small
+              class="field-error"
+              *ngIf="
+                firstName.invalid &&
+                firstName.touched
+              "
+            >
+              First name is required.
+            </small>
+          </div>
+
+          <div class="form-field">
+            <label for="lastName">
+              Last name
+            </label>
+
+            <input
+              id="lastName"
+              name="lastName"
+              type="text"
+              required
+              maxlength="50"
+              [(ngModel)]="newEmployee.lastName"
+              #lastName="ngModel"
+              placeholder="Akdemir"
+            />
+
+            <small
+              class="field-error"
+              *ngIf="
+                lastName.invalid &&
+                lastName.touched
+              "
+            >
+              Last name is required.
+            </small>
+          </div>
+
+          <div class="form-field full-width">
+            <label for="email">
+              Email address
+            </label>
+
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              email
+              maxlength="150"
+              [(ngModel)]="newEmployee.email"
+              #email="ngModel"
+              placeholder="employee@example.com"
+            />
+
+            <small
+              class="field-error"
+              *ngIf="
+                email.invalid &&
+                email.touched
+              "
+            >
+              Enter a valid email address.
+            </small>
+          </div>
+
+          <div class="form-field">
+            <label for="department">
+              Department
+            </label>
+
+            <input
+              id="department"
+              name="department"
+              type="text"
+              required
+              maxlength="100"
+              [(ngModel)]="newEmployee.department"
+              #department="ngModel"
+              placeholder="Software"
+            />
+
+            <small
+              class="field-error"
+              *ngIf="
+                department.invalid &&
+                department.touched
+              "
+            >
+              Department is required.
+            </small>
+          </div>
+
+          <div class="form-field">
+            <label for="position">
+              Position
+            </label>
+
+            <input
+              id="position"
+              name="position"
+              type="text"
+              required
+              maxlength="100"
+              [(ngModel)]="newEmployee.position"
+              #position="ngModel"
+              placeholder="Software Developer"
+            />
+
+            <small
+              class="field-error"
+              *ngIf="
+                position.invalid &&
+                position.touched
+              "
+            >
+              Position is required.
+            </small>
+          </div>
+
+          <div class="form-field">
+            <label for="salary">
+              Salary
+            </label>
+
+            <input
+              id="salary"
+              name="salary"
+              type="number"
+              required
+              min="0"
+              step="0.01"
+              [(ngModel)]="newEmployee.salary"
+              #salary="ngModel"
+            />
+
+            <small
+              class="field-error"
+              *ngIf="
+                salary.invalid &&
+                salary.touched
+              "
+            >
+              Salary must be zero or greater.
+            </small>
+          </div>
+
+          <div class="form-field">
+            <label for="hireDate">
+              Hire date
+            </label>
+
+            <input
+              id="hireDate"
+              name="hireDate"
+              type="date"
+              required
+              [(ngModel)]="newEmployee.hireDate"
+              #hireDate="ngModel"
+            />
+
+            <small
+              class="field-error"
+              *ngIf="
+                hireDate.invalid &&
+                hireDate.touched
+              "
+            >
+              Hire date is required.
+            </small>
+          </div>
+
+          <label
+            class="checkbox-field full-width"
+          >
+            <input
+              name="isActive"
+              type="checkbox"
+              [(ngModel)]="newEmployee.isActive"
+            />
+
+            <span>
+              Employee is active
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          class="secondary-button"
+          type="button"
+          (click)="closeCreateModal()"
+          [disabled]="isSavingEmployee"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="save-button"
+          type="submit"
+          [disabled]="isSavingEmployee"
+        >
+          {{
+            isSavingEmployee
+              ? 'Saving...'
+              : 'Save employee'
+          }}
+        </button>
+      </div>
+    </form>
+  </section>
+</div>

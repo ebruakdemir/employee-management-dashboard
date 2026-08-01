@@ -1,9 +1,22 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import {
+  ChangeDetectorRef,
+  Component,
+  OnInit
+} from '@angular/core';
+import {
+  FormsModule,
+  NgForm
+} from '@angular/forms';
 
-import { Employee } from './models/employee';
-import { EmployeeService } from './services/employee.service';
+import {
+  CreateEmployee,
+  Employee
+} from './models/employee';
+
+import {
+  EmployeeService
+} from './services/employee.service';
 
 type SortField =
   | 'name'
@@ -16,7 +29,10 @@ type SortDirection = 'asc' | 'desc';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -37,8 +53,16 @@ export class App implements OnInit {
   totalCount = 0;
   totalPages = 0;
 
+  showCreateModal = false;
+  isSavingEmployee = false;
+  createEmployeeError = '';
+
+  newEmployee: CreateEmployee =
+    this.createEmptyEmployee();
+
   constructor(
-    private employeeService: EmployeeService
+    private employeeService: EmployeeService,
+    private changeDetectorRef: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -63,7 +87,10 @@ export class App implements OnInit {
           this.totalCount = response.totalCount;
           this.totalPages = response.totalPages;
           this.currentPage = response.page;
+
           this.isLoading = false;
+
+          this.changeDetectorRef.markForCheck();
         },
 
         error: error => {
@@ -76,6 +103,8 @@ export class App implements OnInit {
             'Employees could not be loaded.';
 
           this.isLoading = false;
+
+          this.changeDetectorRef.markForCheck();
         }
       });
   }
@@ -93,17 +122,20 @@ export class App implements OnInit {
           .map(employee => employee.department)
           .filter(department => Boolean(department))
       )
-    ].sort((first, second) =>
-      first.localeCompare(second)
+    ].sort(
+      (first, second) =>
+        first.localeCompare(second)
     );
   }
 
   get filteredEmployees(): Employee[] {
     const search =
-      this.searchTerm.trim().toLowerCase();
+      this.searchTerm
+        .trim()
+        .toLowerCase();
 
-    const filtered = this.employees.filter(
-      employee => {
+    const filtered =
+      this.employees.filter(employee => {
         const matchesSearch =
           !search ||
           employee.firstName
@@ -131,11 +163,13 @@ export class App implements OnInit {
           matchesSearch &&
           matchesDepartment
         );
-      }
-    );
+      });
 
     return [...filtered].sort(
-      (firstEmployee, secondEmployee) =>
+      (
+        firstEmployee,
+        secondEmployee
+      ) =>
         this.compareEmployees(
           firstEmployee,
           secondEmployee
@@ -145,9 +179,81 @@ export class App implements OnInit {
 
   get pageNumbers(): number[] {
     return Array.from(
-      { length: this.totalPages },
+      {
+        length: this.totalPages
+      },
       (_, index) => index + 1
     );
+  }
+
+  openCreateModal(): void {
+    this.newEmployee =
+      this.createEmptyEmployee();
+
+    this.createEmployeeError = '';
+    this.showCreateModal = true;
+  }
+
+  closeCreateModal(): void {
+    if (this.isSavingEmployee) {
+      return;
+    }
+
+    this.showCreateModal = false;
+    this.createEmployeeError = '';
+  }
+
+  saveEmployee(form: NgForm): void {
+    if (
+      form.invalid ||
+      this.isSavingEmployee
+    ) {
+      form.control.markAllAsTouched();
+      return;
+    }
+
+    this.isSavingEmployee = true;
+    this.createEmployeeError = '';
+
+    this.employeeService
+      .createEmployee(this.newEmployee)
+      .subscribe({
+        next: () => {
+          this.isSavingEmployee = false;
+          this.showCreateModal = false;
+
+          this.newEmployee =
+            this.createEmptyEmployee();
+
+          this.currentPage = 1;
+
+          this.loadEmployees();
+
+          this.changeDetectorRef.markForCheck();
+        },
+
+        error: error => {
+          console.error(
+            'Create employee error:',
+            error
+          );
+
+          this.isSavingEmployee = false;
+
+          if (error.status === 409) {
+            this.createEmployeeError =
+              'An employee with this email already exists.';
+          } else if (error.status === 400) {
+            this.createEmployeeError =
+              'Please check the form fields.';
+          } else {
+            this.createEmployeeError =
+              'Employee could not be created.';
+          }
+
+          this.changeDetectorRef.markForCheck();
+        }
+      });
   }
 
   goToPage(page: number): void {
@@ -163,17 +269,62 @@ export class App implements OnInit {
     this.loadEmployees();
   }
 
-  nextPage(): void {
-    this.goToPage(this.currentPage + 1);
+  previousPage(): void {
+    this.goToPage(
+      this.currentPage - 1
+    );
   }
 
-  previousPage(): void {
-    this.goToPage(this.currentPage - 1);
+  nextPage(): void {
+    this.goToPage(
+      this.currentPage + 1
+    );
   }
 
   changePageSize(): void {
     this.currentPage = 1;
     this.loadEmployees();
+  }
+
+  clearFilters(): void {
+    this.searchTerm = '';
+    this.selectedDepartment = '';
+    this.sortField = 'name';
+    this.sortDirection = 'asc';
+  }
+
+  getInitials(
+    employee: Employee
+  ): string {
+    const firstInitial =
+      employee.firstName
+        ?.charAt(0) ?? '';
+
+    const lastInitial =
+      employee.lastName
+        ?.charAt(0) ?? '';
+
+    return (
+      `${firstInitial}${lastInitial}`
+        .toUpperCase() || '?'
+    );
+  }
+
+  private createEmptyEmployee():
+    CreateEmployee {
+    return {
+      firstName: '',
+      lastName: '',
+      email: '',
+      department: '',
+      position: '',
+      salary: 0,
+      hireDate:
+        new Date()
+          .toISOString()
+          .substring(0, 10),
+      isActive: true
+    };
   }
 
   private compareEmployees(
@@ -190,9 +341,8 @@ export class App implements OnInit {
         const secondName =
           `${secondEmployee.firstName} ${secondEmployee.lastName}`;
 
-        comparison = firstName.localeCompare(
-          secondName
-        );
+        comparison =
+          firstName.localeCompare(secondName);
 
         break;
       }
@@ -227,25 +377,5 @@ export class App implements OnInit {
     return this.sortDirection === 'asc'
       ? comparison
       : -comparison;
-  }
-
-  clearFilters(): void {
-    this.searchTerm = '';
-    this.selectedDepartment = '';
-    this.sortField = 'name';
-    this.sortDirection = 'asc';
-  }
-
-  getInitials(employee: Employee): string {
-    const firstInitial =
-      employee.firstName?.charAt(0) ?? '';
-
-    const lastInitial =
-      employee.lastName?.charAt(0) ?? '';
-
-    return (
-      `${firstInitial}${lastInitial}`.toUpperCase() ||
-      '?'
-    );
   }
 }
