@@ -8,7 +8,8 @@ import { Observable } from 'rxjs';
 import {
   CreateEmployee,
   Employee,
-  PagedResult
+  PagedResult,
+  UpdateEmployee
 } from '../models/employee';
 
 @Injectable({
@@ -66,6 +67,24 @@ export class EmployeeService {
     return this.http.post<Employee>(
       this.apiUrl,
       employee
+    );
+  }
+
+  updateEmployee(
+    id: number,
+    employee: UpdateEmployee
+  ): Observable<void> {
+    return this.http.put<void>(
+      `${this.apiUrl}/${id}`,
+      employee
+    );
+  }
+
+  deleteEmployee(
+    id: number
+  ): Observable<void> {
+    return this.http.delete<void>(
+      `${this.apiUrl}/${id}`
     );
   }
 }

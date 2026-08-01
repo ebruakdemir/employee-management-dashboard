@@ -1,3 +1,22 @@
+<div
+  class="toast"
+  *ngIf="toastMessage"
+  [class.error]="toastType === 'error'"
+  role="status"
+>
+  <span class="toast-icon">
+    {{
+      toastType === 'success'
+        ? '✓'
+        : '!'
+    }}
+  </span>
+
+  <span>
+    {{ toastMessage }}
+  </span>
+</div>
+
 <main class="dashboard">
   <header class="dashboard-header">
     <div>
@@ -8,7 +27,8 @@
       <h1>Employees</h1>
 
       <p class="subtitle">
-        View and manage your organisation's employee records.
+        View and manage your organisation's
+        employee records.
       </p>
     </div>
 
@@ -30,7 +50,10 @@
 
       <div>
         <p>Total employees</p>
-        <strong>{{ totalCount }}</strong>
+
+        <strong>
+          {{ totalCount }}
+        </strong>
       </div>
     </article>
 
@@ -40,8 +63,46 @@
       </div>
 
       <div>
-        <p>Active employees on this page</p>
-        <strong>{{ activeEmployeeCount }}</strong>
+        <p>Active on this page</p>
+
+        <strong>
+          {{ activeEmployeeCount }}
+        </strong>
+      </div>
+    </article>
+
+    <article class="summary-card">
+      <div class="summary-icon">
+        🏢
+      </div>
+
+      <div>
+        <p>Departments on this page</p>
+
+        <strong>
+          {{ departmentCount }}
+        </strong>
+      </div>
+    </article>
+
+    <article class="summary-card">
+      <div class="summary-icon">
+        £
+      </div>
+
+      <div>
+        <p>Average salary on this page</p>
+
+        <strong class="average-salary">
+          {{
+            averageSalary
+              | currency:
+                'GBP':
+                'symbol':
+                '1.0-0':
+                'en-GB'
+          }}
+        </strong>
       </div>
     </article>
   </section>
@@ -74,7 +135,9 @@
         </option>
 
         <option
-          *ngFor="let department of departments"
+          *ngFor="
+            let department of departments
+          "
           [value]="department"
         >
           {{ department }}
@@ -171,7 +234,8 @@
         filteredEmployees.length === 0
       "
     >
-      No employees match your search and filters.
+      No employees match your search
+      and filters.
     </div>
 
     <div
@@ -190,20 +254,30 @@
             <th>Position</th>
             <th>Hire date</th>
             <th>Status</th>
+
             <th class="align-right">
               Salary
+            </th>
+
+            <th class="align-right">
+              Actions
             </th>
           </tr>
         </thead>
 
         <tbody>
           <tr
-            *ngFor="let employee of filteredEmployees"
+            *ngFor="
+              let employee
+              of filteredEmployees
+            "
           >
             <td>
               <div class="employee-cell">
                 <div class="avatar">
-                  {{ getInitials(employee) }}
+                  {{
+                    getInitials(employee)
+                  }}
                 </div>
 
                 <div>
@@ -212,8 +286,10 @@
                       employee.firstName ||
                       'Unknown'
                     }}
+
                     {{
-                      employee.lastName || ''
+                      employee.lastName ||
+                      ''
                     }}
                   </strong>
 
@@ -235,7 +311,8 @@
             <td>
               {{
                 employee.hireDate
-                  | date: 'dd MMM yyyy'
+                  | date:
+                    'dd MMM yyyy'
               }}
             </td>
 
@@ -263,6 +340,34 @@
                     '1.0-0':
                     'en-GB'
               }}
+            </td>
+
+            <td class="align-right">
+              <div class="action-buttons">
+                <button
+                  class="edit-button"
+                  type="button"
+                  (click)="
+                    openEditModal(
+                      employee
+                    )
+                  "
+                >
+                  Edit
+                </button>
+
+                <button
+                  class="delete-button"
+                  type="button"
+                  (click)="
+                    openDeleteModal(
+                      employee
+                    )
+                  "
+                >
+                  Delete
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -292,7 +397,9 @@
       <div class="pagination-controls">
         <select
           [(ngModel)]="pageSize"
-          (ngModelChange)="changePageSize()"
+          (ngModelChange)="
+            changePageSize()
+          "
           aria-label="Employees per page"
         >
           <option [ngValue]="5">
@@ -311,13 +418,17 @@
         <button
           type="button"
           (click)="previousPage()"
-          [disabled]="currentPage === 1"
+          [disabled]="
+            currentPage === 1
+          "
         >
           Previous
         </button>
 
         <button
-          *ngFor="let page of pageNumbers"
+          *ngFor="
+            let page of pageNumbers
+          "
           type="button"
           class="page-button"
           [class.active]="
@@ -342,18 +453,18 @@
   </section>
 </main>
 
-<!-- Add employee modal -->
+<!-- Create / Edit modal -->
 
 <div
   class="modal-backdrop"
-  *ngIf="showCreateModal"
-  (click)="closeCreateModal()"
+  *ngIf="showEmployeeModal"
+  (click)="closeEmployeeModal()"
 >
   <section
     class="modal-card"
     role="dialog"
     aria-modal="true"
-    aria-labelledby="createEmployeeTitle"
+    aria-labelledby="employeeModalTitle"
     (click)="$event.stopPropagation()"
   >
     <div class="modal-header">
@@ -362,12 +473,20 @@
           Employee Management
         </p>
 
-        <h2 id="createEmployeeTitle">
-          Add employee
+        <h2 id="employeeModalTitle">
+          {{
+            isEditMode
+              ? 'Edit employee'
+              : 'Add employee'
+          }}
         </h2>
 
         <p>
-          Enter the new employee's information.
+          {{
+            isEditMode
+              ? 'Update the employee information.'
+              : 'Enter the new employee information.'
+          }}
         </p>
       </div>
 
@@ -375,7 +494,7 @@
         class="modal-close-button"
         type="button"
         aria-label="Close modal"
-        (click)="closeCreateModal()"
+        (click)="closeEmployeeModal()"
       >
         ×
       </button>
@@ -383,15 +502,17 @@
 
     <form
       #employeeForm="ngForm"
-      (ngSubmit)="saveEmployee(employeeForm)"
+      (ngSubmit)="
+        saveEmployee(employeeForm)
+      "
       novalidate
     >
       <div class="modal-body">
         <div
           class="form-error-banner"
-          *ngIf="createEmployeeError"
+          *ngIf="employeeFormError"
         >
-          {{ createEmployeeError }}
+          {{ employeeFormError }}
         </div>
 
         <div class="form-grid">
@@ -406,7 +527,10 @@
               type="text"
               required
               maxlength="50"
-              [(ngModel)]="newEmployee.firstName"
+              [(ngModel)]="
+                employeeFormData
+                  .firstName
+              "
               #firstName="ngModel"
               placeholder="Ebru"
             />
@@ -433,7 +557,10 @@
               type="text"
               required
               maxlength="50"
-              [(ngModel)]="newEmployee.lastName"
+              [(ngModel)]="
+                employeeFormData
+                  .lastName
+              "
               #lastName="ngModel"
               placeholder="Akdemir"
             />
@@ -449,7 +576,9 @@
             </small>
           </div>
 
-          <div class="form-field full-width">
+          <div
+            class="form-field full-width"
+          >
             <label for="email">
               Email address
             </label>
@@ -461,7 +590,9 @@
               required
               email
               maxlength="150"
-              [(ngModel)]="newEmployee.email"
+              [(ngModel)]="
+                employeeFormData.email
+              "
               #email="ngModel"
               placeholder="employee@example.com"
             />
@@ -488,7 +619,10 @@
               type="text"
               required
               maxlength="100"
-              [(ngModel)]="newEmployee.department"
+              [(ngModel)]="
+                employeeFormData
+                  .department
+              "
               #department="ngModel"
               placeholder="Software"
             />
@@ -515,7 +649,10 @@
               type="text"
               required
               maxlength="100"
-              [(ngModel)]="newEmployee.position"
+              [(ngModel)]="
+                employeeFormData
+                  .position
+              "
               #position="ngModel"
               placeholder="Software Developer"
             />
@@ -543,7 +680,9 @@
               required
               min="0"
               step="0.01"
-              [(ngModel)]="newEmployee.salary"
+              [(ngModel)]="
+                employeeFormData.salary
+              "
               #salary="ngModel"
             />
 
@@ -554,7 +693,8 @@
                 salary.touched
               "
             >
-              Salary must be zero or greater.
+              Salary must be zero
+              or greater.
             </small>
           </div>
 
@@ -568,7 +708,10 @@
               name="hireDate"
               type="date"
               required
-              [(ngModel)]="newEmployee.hireDate"
+              [(ngModel)]="
+                employeeFormData
+                  .hireDate
+              "
               #hireDate="ngModel"
             />
 
@@ -584,12 +727,18 @@
           </div>
 
           <label
-            class="checkbox-field full-width"
+            class="
+              checkbox-field
+              full-width
+            "
           >
             <input
               name="isActive"
               type="checkbox"
-              [(ngModel)]="newEmployee.isActive"
+              [(ngModel)]="
+                employeeFormData
+                  .isActive
+              "
             />
 
             <span>
@@ -603,8 +752,12 @@
         <button
           class="secondary-button"
           type="button"
-          (click)="closeCreateModal()"
-          [disabled]="isSavingEmployee"
+          (click)="
+            closeEmployeeModal()
+          "
+          [disabled]="
+            isSavingEmployee
+          "
         >
           Cancel
         </button>
@@ -612,15 +765,91 @@
         <button
           class="save-button"
           type="submit"
-          [disabled]="isSavingEmployee"
+          [disabled]="
+            isSavingEmployee
+          "
         >
           {{
             isSavingEmployee
               ? 'Saving...'
-              : 'Save employee'
+              : isEditMode
+                ? 'Update employee'
+                : 'Save employee'
           }}
         </button>
       </div>
     </form>
+  </section>
+</div>
+
+<!-- Delete confirmation modal -->
+
+<div
+  class="modal-backdrop"
+  *ngIf="showDeleteModal"
+  (click)="closeDeleteModal()"
+>
+  <section
+    class="delete-modal-card"
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="deleteEmployeeTitle"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="delete-icon">
+      !
+    </div>
+
+    <h2 id="deleteEmployeeTitle">
+      Delete employee?
+    </h2>
+
+    <p>
+      Are you sure you want to delete
+
+      <strong>
+        {{
+          employeeToDelete?.firstName
+        }}
+
+        {{
+          employeeToDelete?.lastName
+        }}
+      </strong>?
+    </p>
+
+    <p class="delete-warning">
+      This action cannot be undone.
+    </p>
+
+    <div class="delete-modal-actions">
+      <button
+        class="secondary-button"
+        type="button"
+        (click)="closeDeleteModal()"
+        [disabled]="
+          isDeletingEmployee
+        "
+      >
+        Cancel
+      </button>
+
+      <button
+        class="confirm-delete-button"
+        type="button"
+        (click)="
+          confirmDeleteEmployee()
+        "
+        [disabled]="
+          isDeletingEmployee
+        "
+      >
+        {{
+          isDeletingEmployee
+            ? 'Deleting...'
+            : 'Delete employee'
+        }}
+      </button>
+    </div>
   </section>
 </div>

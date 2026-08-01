@@ -11,7 +11,8 @@ import {
 
 import {
   CreateEmployee,
-  Employee
+  Employee,
+  UpdateEmployee
 } from './models/employee';
 
 import {
@@ -24,7 +25,13 @@ type SortField =
   | 'hireDate'
   | 'salary';
 
-type SortDirection = 'asc' | 'desc';
+type SortDirection =
+  | 'asc'
+  | 'desc';
+
+type ToastType =
+  | 'success'
+  | 'error';
 
 @Component({
   selector: 'app-root',
@@ -53,12 +60,24 @@ export class App implements OnInit {
   totalCount = 0;
   totalPages = 0;
 
-  showCreateModal = false;
+  showEmployeeModal = false;
   isSavingEmployee = false;
-  createEmployeeError = '';
+  employeeFormError = '';
 
-  newEmployee: CreateEmployee =
+  editingEmployeeId: number | null = null;
+
+  employeeFormData: CreateEmployee =
     this.createEmptyEmployee();
+
+  showDeleteModal = false;
+  employeeToDelete: Employee | null = null;
+  isDeletingEmployee = false;
+
+  toastMessage = '';
+  toastType: ToastType = 'success';
+
+  private toastTimer?:
+    ReturnType<typeof setTimeout>;
 
   constructor(
     private employeeService: EmployeeService,
@@ -69,44 +88,8 @@ export class App implements OnInit {
     this.loadEmployees();
   }
 
-  loadEmployees(): void {
-    this.isLoading = true;
-    this.errorMessage = '';
-
-    this.employeeService
-      .getEmployees(
-        '',
-        '',
-        '',
-        this.currentPage,
-        this.pageSize
-      )
-      .subscribe({
-        next: response => {
-          this.employees = response.items;
-          this.totalCount = response.totalCount;
-          this.totalPages = response.totalPages;
-          this.currentPage = response.page;
-
-          this.isLoading = false;
-
-          this.changeDetectorRef.markForCheck();
-        },
-
-        error: error => {
-          console.error(
-            'Employee loading error:',
-            error
-          );
-
-          this.errorMessage =
-            'Employees could not be loaded.';
-
-          this.isLoading = false;
-
-          this.changeDetectorRef.markForCheck();
-        }
-      });
+  get isEditMode(): boolean {
+    return this.editingEmployeeId !== null;
   }
 
   get activeEmployeeCount(): number {
@@ -119,12 +102,40 @@ export class App implements OnInit {
     return [
       ...new Set(
         this.employees
-          .map(employee => employee.department)
-          .filter(department => Boolean(department))
+          .map(
+            employee =>
+              employee.department
+          )
+          .filter(
+            department =>
+              Boolean(department)
+          )
       )
     ].sort(
       (first, second) =>
         first.localeCompare(second)
+    );
+  }
+
+  get departmentCount(): number {
+    return this.departments.length;
+  }
+
+  get averageSalary(): number {
+    if (this.employees.length === 0) {
+      return 0;
+    }
+
+    const totalSalary =
+      this.employees.reduce(
+        (total, employee) =>
+          total + employee.salary,
+        0
+      );
+
+    return (
+      totalSalary /
+      this.employees.length
     );
   }
 
@@ -135,35 +146,37 @@ export class App implements OnInit {
         .toLowerCase();
 
     const filtered =
-      this.employees.filter(employee => {
-        const matchesSearch =
-          !search ||
-          employee.firstName
-            ?.toLowerCase()
-            .includes(search) ||
-          employee.lastName
-            ?.toLowerCase()
-            .includes(search) ||
-          employee.email
-            ?.toLowerCase()
-            .includes(search) ||
-          employee.department
-            ?.toLowerCase()
-            .includes(search) ||
-          employee.position
-            ?.toLowerCase()
-            .includes(search);
+      this.employees.filter(
+        employee => {
+          const matchesSearch =
+            !search ||
+            employee.firstName
+              ?.toLowerCase()
+              .includes(search) ||
+            employee.lastName
+              ?.toLowerCase()
+              .includes(search) ||
+            employee.email
+              ?.toLowerCase()
+              .includes(search) ||
+            employee.department
+              ?.toLowerCase()
+              .includes(search) ||
+            employee.position
+              ?.toLowerCase()
+              .includes(search);
 
-        const matchesDepartment =
-          !this.selectedDepartment ||
-          employee.department ===
-            this.selectedDepartment;
+          const matchesDepartment =
+            !this.selectedDepartment ||
+            employee.department ===
+              this.selectedDepartment;
 
-        return (
-          matchesSearch &&
-          matchesDepartment
-        );
-      });
+          return (
+            matchesSearch &&
+            matchesDepartment
+          );
+        }
+      );
 
     return [...filtered].sort(
       (
@@ -186,24 +199,126 @@ export class App implements OnInit {
     );
   }
 
-  openCreateModal(): void {
-    this.newEmployee =
-      this.createEmptyEmployee();
+  loadEmployees(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
 
-    this.createEmployeeError = '';
-    this.showCreateModal = true;
+    this.employeeService
+      .getEmployees(
+        '',
+        '',
+        '',
+        this.currentPage,
+        this.pageSize
+      )
+      .subscribe({
+        next: response => {
+          this.employees =
+            response.items;
+
+          this.totalCount =
+            response.totalCount;
+
+          this.totalPages =
+            response.totalPages;
+
+          this.currentPage =
+            response.page;
+
+          this.isLoading = false;
+
+          this.changeDetectorRef
+            .markForCheck();
+        },
+
+        error: error => {
+          console.error(
+            'Employee loading error:',
+            error
+          );
+
+          this.errorMessage =
+            'Employees could not be loaded.';
+
+          this.isLoading = false;
+
+          this.changeDetectorRef
+            .markForCheck();
+        }
+      });
   }
 
-  closeCreateModal(): void {
+  openCreateModal(): void {
+    this.editingEmployeeId = null;
+
+    this.employeeFormData =
+      this.createEmptyEmployee();
+
+    this.employeeFormError = '';
+    this.showEmployeeModal = true;
+
+    this.changeDetectorRef
+      .markForCheck();
+  }
+
+  openEditModal(
+    employee: Employee
+  ): void {
+    this.editingEmployeeId =
+      employee.id;
+
+    this.employeeFormData = {
+      firstName:
+        employee.firstName,
+
+      lastName:
+        employee.lastName,
+
+      email:
+        employee.email,
+
+      department:
+        employee.department,
+
+      position:
+        employee.position,
+
+      salary:
+        employee.salary,
+
+      hireDate:
+        employee.hireDate.substring(
+          0,
+          10
+        ),
+
+      isActive:
+        employee.isActive
+    };
+
+    this.employeeFormError = '';
+    this.showEmployeeModal = true;
+
+    this.changeDetectorRef
+      .markForCheck();
+  }
+
+  closeEmployeeModal(): void {
     if (this.isSavingEmployee) {
       return;
     }
 
-    this.showCreateModal = false;
-    this.createEmployeeError = '';
+    this.showEmployeeModal = false;
+    this.employeeFormError = '';
+    this.editingEmployeeId = null;
+
+    this.changeDetectorRef
+      .markForCheck();
   }
 
-  saveEmployee(form: NgForm): void {
+  saveEmployee(
+    form: NgForm
+  ): void {
     if (
       form.invalid ||
       this.isSavingEmployee
@@ -212,51 +327,260 @@ export class App implements OnInit {
       return;
     }
 
+    if (this.isEditMode) {
+      this.updateEmployee();
+      return;
+    }
+
+    this.createEmployee(form);
+  }
+
+  private createEmployee(
+    form: NgForm
+  ): void {
     this.isSavingEmployee = true;
-    this.createEmployeeError = '';
+    this.employeeFormError = '';
 
     this.employeeService
-      .createEmployee(this.newEmployee)
+      .createEmployee(
+        this.employeeFormData
+      )
       .subscribe({
         next: () => {
           this.isSavingEmployee = false;
-          this.showCreateModal = false;
+          this.showEmployeeModal = false;
 
-          this.newEmployee =
+          const emptyEmployee =
             this.createEmptyEmployee();
+
+          this.employeeFormData =
+            emptyEmployee;
+
+          form.resetForm(
+            emptyEmployee
+          );
 
           this.currentPage = 1;
 
           this.loadEmployees();
 
-          this.changeDetectorRef.markForCheck();
+          this.showToast(
+            'Employee created successfully.'
+          );
         },
 
         error: error => {
-          console.error(
-            'Create employee error:',
-            error
+          this.handleSaveError(
+            error,
+            'Employee could not be created.'
           );
-
-          this.isSavingEmployee = false;
-
-          if (error.status === 409) {
-            this.createEmployeeError =
-              'An employee with this email already exists.';
-          } else if (error.status === 400) {
-            this.createEmployeeError =
-              'Please check the form fields.';
-          } else {
-            this.createEmployeeError =
-              'Employee could not be created.';
-          }
-
-          this.changeDetectorRef.markForCheck();
         }
       });
   }
 
-  goToPage(page: number): void {
+  private updateEmployee(): void {
+    if (
+      this.editingEmployeeId === null
+    ) {
+      return;
+    }
+
+    this.isSavingEmployee = true;
+    this.employeeFormError = '';
+
+    const updateData: UpdateEmployee = {
+      ...this.employeeFormData
+    };
+
+    this.employeeService
+      .updateEmployee(
+        this.editingEmployeeId,
+        updateData
+      )
+      .subscribe({
+        next: () => {
+          this.isSavingEmployee = false;
+          this.showEmployeeModal = false;
+          this.editingEmployeeId = null;
+
+          this.loadEmployees();
+
+          this.showToast(
+            'Employee updated successfully.'
+          );
+        },
+
+        error: error => {
+          this.handleSaveError(
+            error,
+            'Employee could not be updated.'
+          );
+        }
+      });
+  }
+
+  private handleSaveError(
+    error: any,
+    defaultMessage: string
+  ): void {
+    console.error(
+      'Save employee error:',
+      error
+    );
+
+    this.isSavingEmployee = false;
+
+    if (error.status === 409) {
+      this.employeeFormError =
+        'An employee with this email already exists.';
+
+      this.showToast(
+        'This email address is already being used.',
+        'error'
+      );
+    } else if (error.status === 400) {
+      this.employeeFormError =
+        'Please check the form fields.';
+
+      this.showToast(
+        'Please correct the form errors.',
+        'error'
+      );
+    } else if (error.status === 404) {
+      this.employeeFormError =
+        'Employee could not be found.';
+
+      this.showToast(
+        'Employee could not be found.',
+        'error'
+      );
+    } else {
+      this.employeeFormError =
+        defaultMessage;
+
+      this.showToast(
+        defaultMessage,
+        'error'
+      );
+    }
+
+    this.changeDetectorRef
+      .markForCheck();
+  }
+
+  openDeleteModal(
+    employee: Employee
+  ): void {
+    this.employeeToDelete =
+      employee;
+
+    this.showDeleteModal = true;
+
+    this.changeDetectorRef
+      .markForCheck();
+  }
+
+  closeDeleteModal(): void {
+    if (this.isDeletingEmployee) {
+      return;
+    }
+
+    this.employeeToDelete = null;
+    this.showDeleteModal = false;
+
+    this.changeDetectorRef
+      .markForCheck();
+  }
+
+  confirmDeleteEmployee(): void {
+    if (
+      !this.employeeToDelete ||
+      this.isDeletingEmployee
+    ) {
+      return;
+    }
+
+    const employeeId =
+      this.employeeToDelete.id;
+
+    this.isDeletingEmployee = true;
+
+    this.employeeService
+      .deleteEmployee(employeeId)
+      .subscribe({
+        next: () => {
+          this.isDeletingEmployee = false;
+          this.showDeleteModal = false;
+          this.employeeToDelete = null;
+
+          if (
+            this.employees.length === 1 &&
+            this.currentPage > 1
+          ) {
+            this.currentPage--;
+          }
+
+          this.loadEmployees();
+
+          this.showToast(
+            'Employee deleted successfully.'
+          );
+        },
+
+        error: error => {
+          console.error(
+            'Delete employee error:',
+            error
+          );
+
+          this.isDeletingEmployee = false;
+
+          if (error.status === 404) {
+            this.showToast(
+              'Employee could not be found.',
+              'error'
+            );
+          } else {
+            this.showToast(
+              'Employee could not be deleted.',
+              'error'
+            );
+          }
+
+          this.changeDetectorRef
+            .markForCheck();
+        }
+      });
+  }
+
+  showToast(
+    message: string,
+    type: ToastType = 'success'
+  ): void {
+    this.toastMessage = message;
+    this.toastType = type;
+
+    if (this.toastTimer) {
+      clearTimeout(
+        this.toastTimer
+      );
+    }
+
+    this.toastTimer =
+      setTimeout(() => {
+        this.toastMessage = '';
+
+        this.changeDetectorRef
+          .markForCheck();
+      }, 3000);
+
+    this.changeDetectorRef
+      .markForCheck();
+  }
+
+  goToPage(
+    page: number
+  ): void {
     if (
       page < 1 ||
       page > this.totalPages ||
@@ -319,10 +643,12 @@ export class App implements OnInit {
       department: '',
       position: '',
       salary: 0,
+
       hireDate:
         new Date()
           .toISOString()
           .substring(0, 10),
+
       isActive: true
     };
   }
@@ -342,16 +668,19 @@ export class App implements OnInit {
           `${secondEmployee.firstName} ${secondEmployee.lastName}`;
 
         comparison =
-          firstName.localeCompare(secondName);
+          firstName.localeCompare(
+            secondName
+          );
 
         break;
       }
 
       case 'department':
         comparison =
-          firstEmployee.department.localeCompare(
-            secondEmployee.department
-          );
+          firstEmployee.department
+            .localeCompare(
+              secondEmployee.department
+            );
 
         break;
 
@@ -374,8 +703,10 @@ export class App implements OnInit {
         break;
     }
 
-    return this.sortDirection === 'asc'
-      ? comparison
-      : -comparison;
+    return (
+      this.sortDirection === 'asc'
+        ? comparison
+        : -comparison
+    );
   }
 }
