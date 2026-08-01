@@ -1,855 +1,767 @@
 <div
-  class="toast"
-  *ngIf="toastMessage"
-  [class.error]="toastType === 'error'"
-  role="status"
+  class="app-shell"
+  [class.dark-theme]="isDarkMode"
 >
-  <span class="toast-icon">
-    {{
-      toastType === 'success'
-        ? '✓'
-        : '!'
-    }}
-  </span>
+  <div
+    class="toast"
+    *ngIf="toastMessage"
+    [class.toast-error]="toastType === 'error'"
+  >
+    <span class="toast-symbol">
+      {{ toastType === 'success' ? '✓' : '!' }}
+    </span>
 
-  <span>
-    {{ toastMessage }}
-  </span>
-</div>
+    <span>{{ toastMessage }}</span>
+  </div>
 
-<main class="dashboard">
-  <header class="dashboard-header">
-    <div>
-      <p class="eyebrow">
-        Employee Management
-      </p>
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">E</div>
 
-      <h1>Employees</h1>
-
-      <p class="subtitle">
-        View and manage your organisation's
-        employee records.
-      </p>
+      <div>
+        <strong>Emplora</strong>
+        <span>Happy teams, better days</span>
+      </div>
     </div>
 
-    <button
-      class="primary-button"
-      type="button"
-      (click)="openCreateModal()"
+    <nav class="navigation">
+      <button
+        class="nav-item"
+        [class.active]="activeSection === 'dashboard'"
+        type="button"
+        (click)="setActiveSection('dashboard')"
+      >
+        <span>⌂</span>
+        Dashboard
+      </button>
+
+      <button
+        class="nav-item"
+        [class.active]="activeSection === 'employees'"
+        type="button"
+        (click)="setActiveSection('employees')"
+      >
+        <span>👥</span>
+        Employees
+      </button>
+
+      <button
+        class="nav-item"
+        [class.active]="activeSection === 'departments'"
+        type="button"
+        (click)="setActiveSection('departments')"
+      >
+        <span>🏢</span>
+        Departments
+      </button>
+
+      <button
+        class="nav-item"
+        [class.active]="activeSection === 'reports'"
+        type="button"
+        (click)="setActiveSection('reports')"
+      >
+        <span>▥</span>
+        Reports
+      </button>
+    </nav>
+
+    <div class="sidebar-note">
+      <span>✦</span>
+
+      <div>
+        <strong>Team tip</strong>
+        <p>Celebrate small wins together.</p>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <button
+        class="theme-button"
+        type="button"
+        (click)="toggleTheme()"
+      >
+        <span>
+          {{ isDarkMode ? '☀' : '☾' }}
+        </span>
+
+        {{ isDarkMode ? 'Light mode' : 'Dark mode' }}
+      </button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header
+      id="dashboard"
+      class="topbar scroll-section"
     >
-      <span>+</span>
-      Add employee
-    </button>
-  </header>
-
-  <section class="summary-grid">
-    <article class="summary-card">
-      <div class="summary-icon">
-        👥
-      </div>
-
       <div>
-        <p>Total employees</p>
+        <p class="welcome-label">
+          TEAM OVERVIEW
+        </p>
 
-        <strong>
-          {{ totalCount }}
-        </strong>
-      </div>
-    </article>
+        <h1>Good to see you, Ebru ✿</h1>
 
-    <article class="summary-card">
-      <div class="summary-icon">
-        ✓
-      </div>
-
-      <div>
-        <p>Active on this page</p>
-
-        <strong>
-          {{ activeEmployeeCount }}
-        </strong>
-      </div>
-    </article>
-
-    <article class="summary-card">
-      <div class="summary-icon">
-        🏢
-      </div>
-
-      <div>
-        <p>Departments on this page</p>
-
-        <strong>
-          {{ departmentCount }}
-        </strong>
-      </div>
-    </article>
-
-    <article class="summary-card">
-      <div class="summary-icon">
-        £
-      </div>
-
-      <div>
-        <p>Average salary on this page</p>
-
-        <strong class="average-salary">
-          {{
-            averageSalary
-              | currency:
-                'GBP':
-                'symbol':
-                '1.0-0':
-                'en-GB'
-          }}
-        </strong>
-      </div>
-    </article>
-  </section>
-
-  <section class="employee-panel">
-    <div class="panel-header">
-      <div>
-        <h2>Employee directory</h2>
-
-        <p>
-          {{ filteredEmployees.length }}
-          employee records on this page
+        <p class="welcome-text">
+          A calm place to manage your growing team.
         </p>
       </div>
-    </div>
-
-    <div class="filter-container">
-      <input
-        type="text"
-        placeholder="Search by name, email, department or position..."
-        [(ngModel)]="searchTerm"
-      />
-
-      <select
-        [(ngModel)]="selectedDepartment"
-        aria-label="Filter by department"
-      >
-        <option value="">
-          All departments
-        </option>
-
-        <option
-          *ngFor="
-            let department of departments
-          "
-          [value]="department"
-        >
-          {{ department }}
-        </option>
-      </select>
-
-      <select
-        [(ngModel)]="sortField"
-        aria-label="Sort employees"
-      >
-        <option value="name">
-          Sort by name
-        </option>
-
-        <option value="department">
-          Sort by department
-        </option>
-
-        <option value="hireDate">
-          Sort by hire date
-        </option>
-
-        <option value="salary">
-          Sort by salary
-        </option>
-      </select>
-
-      <select
-        [(ngModel)]="sortDirection"
-        aria-label="Sort direction"
-      >
-        <option value="asc">
-          Ascending
-        </option>
-
-        <option value="desc">
-          Descending
-        </option>
-      </select>
 
       <button
-        class="clear-button"
+        class="add-button"
         type="button"
-        (click)="clearFilters()"
-        [disabled]="
-          !searchTerm &&
-          !selectedDepartment &&
-          sortField === 'name' &&
-          sortDirection === 'asc'
-        "
+        (click)="openCreateModal()"
       >
-        Clear filters
+        <span>＋</span>
+        Add employee
       </button>
-    </div>
+    </header>
 
-    <div
-      class="state-message"
-      *ngIf="isLoading"
+    <section
+      id="departments"
+      class="stats-grid scroll-section"
     >
-      Employees are loading...
-    </div>
+      <article class="stat-card stat-pink">
+        <div class="stat-icon">👥</div>
 
-    <div
-      class="state-message error"
-      *ngIf="errorMessage"
+        <div>
+          <span>Total employees</span>
+          <strong>{{ totalCount }}</strong>
+          <small>All registered team members</small>
+        </div>
+      </article>
+
+      <article class="stat-card stat-mint">
+        <div class="stat-icon">✓</div>
+
+        <div>
+          <span>Active employees</span>
+          <strong>{{ activeEmployeeCount }}</strong>
+          <small>{{ activePercentage }}% active this page</small>
+        </div>
+      </article>
+
+      <article class="stat-card stat-lavender">
+        <div class="stat-icon">🏢</div>
+
+        <div>
+          <span>Departments</span>
+          <strong>{{ departmentCount }}</strong>
+          <small>On the current page</small>
+        </div>
+      </article>
+
+      <article class="stat-card stat-peach">
+        <div class="stat-icon">£</div>
+
+        <div>
+          <span>Average salary</span>
+
+          <strong>
+            {{
+              averageSalary
+                | currency:
+                  'GBP':
+                  'symbol':
+                  '1.0-0':
+                  'en-GB'
+            }}
+          </strong>
+
+          <small>Current-page average</small>
+        </div>
+      </article>
+    </section>
+
+    <section
+      id="employees"
+      class="directory-panel scroll-section"
     >
-      {{ errorMessage }}
+      <div class="directory-heading">
+        <div>
+          <p class="section-label">
+            TEAM DIRECTORY
+          </p>
 
-      <button
-        type="button"
-        (click)="loadEmployees()"
-      >
-        Try again
-      </button>
-    </div>
+          <h2>Meet the team ♡</h2>
 
-    <div
-      class="state-message"
-      *ngIf="
-        !isLoading &&
-        !errorMessage &&
-        totalCount === 0
-      "
-    >
-      No employees found.
-    </div>
+          <span>
+            {{ filteredEmployees.length }}
+            employees shown
+          </span>
+        </div>
 
-    <div
-      class="state-message"
-      *ngIf="
-        !isLoading &&
-        !errorMessage &&
-        totalCount > 0 &&
-        filteredEmployees.length === 0
-      "
-    >
-      No employees match your search
-      and filters.
-    </div>
-
-    <div
-      class="table-wrapper"
-      *ngIf="
-        !isLoading &&
-        !errorMessage &&
-        filteredEmployees.length > 0
-      "
-    >
-      <table>
-        <thead>
-          <tr>
-            <th>Employee</th>
-            <th>Department</th>
-            <th>Position</th>
-            <th>Hire date</th>
-            <th>Status</th>
-
-            <th class="align-right">
-              Salary
-            </th>
-
-            <th class="align-right">
-              Actions
-            </th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr
-            *ngFor="
-              let employee
-              of filteredEmployees
-            "
-          >
-            <td>
-              <div class="employee-cell">
-                <div class="avatar">
-                  {{
-                    getInitials(employee)
-                  }}
-                </div>
-
-                <div>
-                  <strong>
-                    {{
-                      employee.firstName ||
-                      'Unknown'
-                    }}
-
-                    {{
-                      employee.lastName ||
-                      ''
-                    }}
-                  </strong>
-
-                  <span>
-                    {{ employee.email }}
-                  </span>
-                </div>
-              </div>
-            </td>
-
-            <td>
-              {{ employee.department }}
-            </td>
-
-            <td>
-              {{ employee.position }}
-            </td>
-
-            <td>
-              {{
-                employee.hireDate
-                  | date:
-                    'dd MMM yyyy'
-              }}
-            </td>
-
-            <td>
-              <span
-                class="status-badge"
-                [class.inactive]="
-                  !employee.isActive
-                "
-              >
-                {{
-                  employee.isActive
-                    ? 'Active'
-                    : 'Inactive'
-                }}
-              </span>
-            </td>
-
-            <td class="align-right salary">
-              {{
-                employee.salary
-                  | currency:
-                    'GBP':
-                    'symbol':
-                    '1.0-0':
-                    'en-GB'
-              }}
-            </td>
-
-            <td class="align-right">
-              <div class="action-buttons">
-                <button
-                  class="edit-button"
-                  type="button"
-                  (click)="
-                    openEditModal(
-                      employee
-                    )
-                  "
-                >
-                  Edit
-                </button>
-
-                <button
-                  class="delete-button"
-                  type="button"
-                  (click)="
-                    openDeleteModal(
-                      employee
-                    )
-                  "
-                >
-                  Delete
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div
-      class="pagination-container"
-      *ngIf="
-        !isLoading &&
-        !errorMessage &&
-        totalPages > 0
-      "
-    >
-      <div class="pagination-info">
-        <span>
-          Page {{ currentPage }}
-          of {{ totalPages }}
-        </span>
-
-        <span>
-          {{ totalCount }}
-          total employees
-        </span>
+        <div class="view-indicator">
+          <span></span>
+          Live data
+        </div>
       </div>
 
-      <div class="pagination-controls">
+      <div class="controls">
+        <div class="search-box">
+          <span>⌕</span>
+
+          <input
+            type="text"
+            placeholder="Search employees..."
+            [(ngModel)]="searchTerm"
+          />
+        </div>
+
         <select
-          [(ngModel)]="pageSize"
-          (ngModelChange)="
-            changePageSize()
-          "
-          aria-label="Employees per page"
+          [(ngModel)]="selectedDepartment"
         >
-          <option [ngValue]="5">
-            5 per page
+          <option value="">
+            All departments
           </option>
 
-          <option [ngValue]="10">
-            10 per page
+          <option
+            *ngFor="let department of departments"
+            [value]="department"
+          >
+            {{ department }}
+          </option>
+        </select>
+
+        <select [(ngModel)]="sortField">
+          <option value="name">
+            Sort by name
           </option>
 
-          <option [ngValue]="20">
-            20 per page
+          <option value="department">
+            Sort by department
+          </option>
+
+          <option value="hireDate">
+            Sort by hire date
+          </option>
+
+          <option value="salary">
+            Sort by salary
+          </option>
+        </select>
+
+        <select [(ngModel)]="sortDirection">
+          <option value="asc">
+            Ascending
+          </option>
+
+          <option value="desc">
+            Descending
           </option>
         </select>
 
         <button
+          class="reset-button"
           type="button"
-          (click)="previousPage()"
-          [disabled]="
-            currentPage === 1
-          "
+          (click)="clearFilters()"
         >
-          Previous
-        </button>
-
-        <button
-          *ngFor="
-            let page of pageNumbers
-          "
-          type="button"
-          class="page-button"
-          [class.active]="
-            page === currentPage
-          "
-          (click)="goToPage(page)"
-        >
-          {{ page }}
-        </button>
-
-        <button
-          type="button"
-          (click)="nextPage()"
-          [disabled]="
-            currentPage === totalPages
-          "
-        >
-          Next
+          Reset
         </button>
       </div>
-    </div>
-  </section>
-</main>
 
-<!-- Create / Edit modal -->
+      <div
+        class="loading-state"
+        *ngIf="isLoading"
+      >
+        <div class="spinner"></div>
+        <p>Loading employees...</p>
+      </div>
 
-<div
-  class="modal-backdrop"
-  *ngIf="showEmployeeModal"
-  (click)="closeEmployeeModal()"
->
-  <section
-    class="modal-card"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="employeeModalTitle"
-    (click)="$event.stopPropagation()"
-  >
-    <div class="modal-header">
-      <div>
-        <p class="modal-eyebrow">
-          Employee Management
-        </p>
+      <div
+        class="error-state"
+        *ngIf="errorMessage"
+      >
+        <div>!</div>
+        <p>{{ errorMessage }}</p>
 
-        <h2 id="employeeModalTitle">
-          {{
-            isEditMode
-              ? 'Edit employee'
-              : 'Add employee'
-          }}
-        </h2>
+        <button
+          type="button"
+          (click)="loadEmployees()"
+        >
+          Try again
+        </button>
+      </div>
+
+      <div
+        class="empty-state"
+        *ngIf="
+          !isLoading &&
+          !errorMessage &&
+          filteredEmployees.length === 0
+        "
+      >
+        <div>⌕</div>
+        <h3>No employees found</h3>
 
         <p>
-          {{
-            isEditMode
-              ? 'Update the employee information.'
-              : 'Enter the new employee information.'
-          }}
+          Try changing your search or filter.
         </p>
       </div>
 
-      <button
-        class="modal-close-button"
-        type="button"
-        aria-label="Close modal"
-        (click)="closeEmployeeModal()"
+      <div
+        class="employee-grid"
+        *ngIf="
+          !isLoading &&
+          !errorMessage &&
+          filteredEmployees.length > 0
+        "
       >
-        ×
-      </button>
-    </div>
-
-    <form
-      #employeeForm="ngForm"
-      (ngSubmit)="
-        saveEmployee(employeeForm)
-      "
-      novalidate
-    >
-      <div class="modal-body">
-        <div
-          class="form-error-banner"
-          *ngIf="employeeFormError"
+        <article
+          class="employee-card"
+          *ngFor="let employee of filteredEmployees"
         >
-          {{ employeeFormError }}
+          <div class="card-decoration"></div>
+
+          <div class="employee-card-header">
+            <div
+              class="employee-avatar"
+              [ngClass]="getAvatarClass(employee)"
+            >
+              {{ getInitials(employee) }}
+            </div>
+
+            <span
+              class="employee-status"
+              [class.status-inactive]="!employee.isActive"
+            >
+              <i></i>
+
+              {{
+                employee.isActive
+                  ? 'Active'
+                  : 'Inactive'
+              }}
+            </span>
+          </div>
+
+          <div class="employee-main">
+            <h3>
+              {{ employee.firstName }}
+              {{ employee.lastName }}
+            </h3>
+
+            <p>{{ employee.position }}</p>
+
+            <span class="department-pill">
+              {{ employee.department }}
+            </span>
+          </div>
+
+          <div class="employee-details">
+            <div>
+              <span>Email</span>
+              <strong>{{ employee.email }}</strong>
+            </div>
+
+            <div>
+              <span>Hire date</span>
+
+              <strong>
+                {{
+                  employee.hireDate
+                    | date: 'dd MMM yyyy'
+                }}
+              </strong>
+            </div>
+
+            <div>
+              <span>Salary</span>
+
+              <strong>
+                {{
+                  employee.salary
+                    | currency:
+                      'GBP':
+                      'symbol':
+                      '1.0-0':
+                      'en-GB'
+                }}
+              </strong>
+            </div>
+          </div>
+
+          <div class="employee-actions">
+            <button
+              class="card-edit-button"
+              type="button"
+              (click)="openEditModal(employee)"
+            >
+              Edit profile
+            </button>
+
+            <button
+              class="card-delete-button"
+              type="button"
+              (click)="openDeleteModal(employee)"
+              aria-label="Delete employee"
+            >
+              ×
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <div
+        class="pagination"
+        *ngIf="totalPages > 0"
+      >
+        <div>
+          Page {{ currentPage }}
+          of {{ totalPages }}
         </div>
 
-        <div class="form-grid">
-          <div class="form-field">
-            <label for="firstName">
-              First name
-            </label>
-
-            <input
-              id="firstName"
-              name="firstName"
-              type="text"
-              required
-              maxlength="50"
-              [(ngModel)]="
-                employeeFormData
-                  .firstName
-              "
-              #firstName="ngModel"
-              placeholder="Ebru"
-            />
-
-            <small
-              class="field-error"
-              *ngIf="
-                firstName.invalid &&
-                firstName.touched
-              "
-            >
-              First name is required.
-            </small>
-          </div>
-
-          <div class="form-field">
-            <label for="lastName">
-              Last name
-            </label>
-
-            <input
-              id="lastName"
-              name="lastName"
-              type="text"
-              required
-              maxlength="50"
-              [(ngModel)]="
-                employeeFormData
-                  .lastName
-              "
-              #lastName="ngModel"
-              placeholder="Akdemir"
-            />
-
-            <small
-              class="field-error"
-              *ngIf="
-                lastName.invalid &&
-                lastName.touched
-              "
-            >
-              Last name is required.
-            </small>
-          </div>
-
-          <div
-            class="form-field full-width"
+        <div class="pagination-buttons">
+          <select
+            [(ngModel)]="pageSize"
+            (ngModelChange)="changePageSize()"
           >
-            <label for="email">
-              Email address
-            </label>
+            <option [ngValue]="6">
+              6 per page
+            </option>
 
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              email
-              maxlength="150"
-              [(ngModel)]="
-                employeeFormData.email
-              "
-              #email="ngModel"
-              placeholder="employee@example.com"
-            />
+            <option [ngValue]="12">
+              12 per page
+            </option>
 
-            <small
-              class="field-error"
-              *ngIf="
-                email.invalid &&
-                email.touched
-              "
-            >
-              Enter a valid email address.
-            </small>
-          </div>
+            <option [ngValue]="24">
+              24 per page
+            </option>
+          </select>
 
-          <div class="form-field">
-            <label for="department">
-              Department
-            </label>
-
-            <input
-              id="department"
-              name="department"
-              type="text"
-              required
-              maxlength="100"
-              [(ngModel)]="
-                employeeFormData
-                  .department
-              "
-              #department="ngModel"
-              placeholder="Software"
-            />
-
-            <small
-              class="field-error"
-              *ngIf="
-                department.invalid &&
-                department.touched
-              "
-            >
-              Department is required.
-            </small>
-          </div>
-
-          <div class="form-field">
-            <label for="position">
-              Position
-            </label>
-
-            <input
-              id="position"
-              name="position"
-              type="text"
-              required
-              maxlength="100"
-              [(ngModel)]="
-                employeeFormData
-                  .position
-              "
-              #position="ngModel"
-              placeholder="Software Developer"
-            />
-
-            <small
-              class="field-error"
-              *ngIf="
-                position.invalid &&
-                position.touched
-              "
-            >
-              Position is required.
-            </small>
-          </div>
-
-          <div class="form-field">
-            <label for="salary">
-              Salary
-            </label>
-
-            <input
-              id="salary"
-              name="salary"
-              type="number"
-              required
-              min="0"
-              step="0.01"
-              [(ngModel)]="
-                employeeFormData.salary
-              "
-              #salary="ngModel"
-            />
-
-            <small
-              class="field-error"
-              *ngIf="
-                salary.invalid &&
-                salary.touched
-              "
-            >
-              Salary must be zero
-              or greater.
-            </small>
-          </div>
-
-          <div class="form-field">
-            <label for="hireDate">
-              Hire date
-            </label>
-
-            <input
-              id="hireDate"
-              name="hireDate"
-              type="date"
-              required
-              [(ngModel)]="
-                employeeFormData
-                  .hireDate
-              "
-              #hireDate="ngModel"
-            />
-
-            <small
-              class="field-error"
-              *ngIf="
-                hireDate.invalid &&
-                hireDate.touched
-              "
-            >
-              Hire date is required.
-            </small>
-          </div>
-
-          <label
-            class="
-              checkbox-field
-              full-width
-            "
+          <button
+            type="button"
+            (click)="previousPage()"
+            [disabled]="currentPage === 1"
           >
-            <input
-              name="isActive"
-              type="checkbox"
-              [(ngModel)]="
-                employeeFormData
-                  .isActive
-              "
-            />
+            ‹
+          </button>
 
-            <span>
-              Employee is active
-            </span>
-          </label>
+          <button
+            *ngFor="let page of pageNumbers"
+            type="button"
+            [class.active]="page === currentPage"
+            (click)="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+
+          <button
+            type="button"
+            (click)="nextPage()"
+            [disabled]="currentPage === totalPages"
+          >
+            ›
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section
+      id="reports"
+      class="reports-panel scroll-section"
+    >
+      <div class="reports-heading">
+        <div>
+          <p class="section-label">
+            QUICK REPORTS
+          </p>
+
+          <h2>Team insights ✦</h2>
+
+          <span>
+            A simple summary of your current page.
+          </span>
         </div>
       </div>
 
-      <div class="modal-footer">
+      <div class="report-grid">
+        <article class="report-card report-pink">
+          <span>Active rate</span>
+          <strong>{{ activePercentage }}%</strong>
+          <small>Employees currently active</small>
+        </article>
+
+        <article class="report-card report-mint">
+          <span>Departments</span>
+          <strong>{{ departmentCount }}</strong>
+          <small>Teams represented here</small>
+        </article>
+
+        <article class="report-card report-lavender">
+          <span>Average salary</span>
+
+          <strong>
+            {{
+              averageSalary
+                | currency:
+                  'GBP':
+                  'symbol':
+                  '1.0-0':
+                  'en-GB'
+            }}
+          </strong>
+
+          <small>Average for this page</small>
+        </article>
+      </div>
+
+      <div class="department-report">
+        <h3>Departments represented</h3>
+
+        <div class="department-tags">
+          <span
+            *ngFor="let department of departments"
+          >
+            {{ department }}
+          </span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Create / Edit modal -->
+
+  <div
+    class="modal-backdrop"
+    *ngIf="showEmployeeModal"
+    (click)="closeEmployeeModal()"
+  >
+    <section
+      class="modal-card"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-header">
+        <div>
+          <span>EMPLOYEE PROFILE</span>
+
+          <h2>
+            {{
+              isEditMode
+                ? 'Edit employee'
+                : 'Add new employee'
+            }}
+          </h2>
+
+          <p>
+            {{
+              isEditMode
+                ? 'Update the employee information.'
+                : 'Complete the form to add a team member.'
+            }}
+          </p>
+        </div>
+
         <button
-          class="secondary-button"
           type="button"
-          (click)="
-            closeEmployeeModal()
-          "
-          [disabled]="
-            isSavingEmployee
-          "
+          (click)="closeEmployeeModal()"
+        >
+          ×
+        </button>
+      </div>
+
+      <form
+        #employeeForm="ngForm"
+        (ngSubmit)="saveEmployee(employeeForm)"
+        novalidate
+      >
+        <div class="modal-content">
+          <div
+            class="form-error"
+            *ngIf="employeeFormError"
+          >
+            {{ employeeFormError }}
+          </div>
+
+          <div class="form-grid">
+            <label>
+              <span>First name</span>
+
+              <input
+                name="firstName"
+                type="text"
+                required
+                maxlength="50"
+                [(ngModel)]="
+                  employeeFormData.firstName
+                "
+              />
+            </label>
+
+            <label>
+              <span>Last name</span>
+
+              <input
+                name="lastName"
+                type="text"
+                required
+                maxlength="50"
+                [(ngModel)]="
+                  employeeFormData.lastName
+                "
+              />
+            </label>
+
+            <label class="full-field">
+              <span>Email address</span>
+
+              <input
+                name="email"
+                type="email"
+                required
+                email
+                [(ngModel)]="
+                  employeeFormData.email
+                "
+              />
+            </label>
+
+            <label>
+              <span>Department</span>
+
+              <input
+                name="department"
+                type="text"
+                required
+                [(ngModel)]="
+                  employeeFormData.department
+                "
+              />
+            </label>
+
+            <label>
+              <span>Position</span>
+
+              <input
+                name="position"
+                type="text"
+                required
+                [(ngModel)]="
+                  employeeFormData.position
+                "
+              />
+            </label>
+
+            <label>
+              <span>Salary</span>
+
+              <input
+                name="salary"
+                type="number"
+                required
+                min="0"
+                [(ngModel)]="
+                  employeeFormData.salary
+                "
+              />
+            </label>
+
+            <label>
+              <span>Hire date</span>
+
+              <input
+                name="hireDate"
+                type="date"
+                required
+                [(ngModel)]="
+                  employeeFormData.hireDate
+                "
+              />
+            </label>
+
+            <label
+              class="active-checkbox full-field"
+            >
+              <input
+                name="isActive"
+                type="checkbox"
+                [(ngModel)]="
+                  employeeFormData.isActive
+                "
+              />
+
+              <span>Employee is active</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button
+            class="cancel-button"
+            type="button"
+            (click)="closeEmployeeModal()"
+          >
+            Cancel
+          </button>
+
+          <button
+            class="submit-button"
+            type="submit"
+            [disabled]="isSavingEmployee"
+          >
+            {{
+              isSavingEmployee
+                ? 'Saving...'
+                : isEditMode
+                  ? 'Update employee'
+                  : 'Create employee'
+            }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <!-- Delete modal -->
+
+  <div
+    class="modal-backdrop"
+    *ngIf="showDeleteModal"
+    (click)="closeDeleteModal()"
+  >
+    <section
+      class="delete-card"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="delete-symbol">!</div>
+
+      <h2>Delete employee?</h2>
+
+      <p>
+        You are about to delete
+
+        <strong>
+          {{ employeeToDelete?.firstName }}
+          {{ employeeToDelete?.lastName }}
+        </strong>.
+      </p>
+
+      <small>
+        This action cannot be undone.
+      </small>
+
+      <div class="delete-actions">
+        <button
+          class="cancel-button"
+          type="button"
+          (click)="closeDeleteModal()"
         >
           Cancel
         </button>
 
         <button
-          class="save-button"
-          type="submit"
-          [disabled]="
-            isSavingEmployee
-          "
+          class="danger-button"
+          type="button"
+          (click)="confirmDeleteEmployee()"
+          [disabled]="isDeletingEmployee"
         >
           {{
-            isSavingEmployee
-              ? 'Saving...'
-              : isEditMode
-                ? 'Update employee'
-                : 'Save employee'
+            isDeletingEmployee
+              ? 'Deleting...'
+              : 'Delete employee'
           }}
         </button>
       </div>
-    </form>
-  </section>
-</div>
-
-<!-- Delete confirmation modal -->
-
-<div
-  class="modal-backdrop"
-  *ngIf="showDeleteModal"
-  (click)="closeDeleteModal()"
->
-  <section
-    class="delete-modal-card"
-    role="alertdialog"
-    aria-modal="true"
-    aria-labelledby="deleteEmployeeTitle"
-    (click)="$event.stopPropagation()"
-  >
-    <div class="delete-icon">
-      !
-    </div>
-
-    <h2 id="deleteEmployeeTitle">
-      Delete employee?
-    </h2>
-
-    <p>
-      Are you sure you want to delete
-
-      <strong>
-        {{
-          employeeToDelete?.firstName
-        }}
-
-        {{
-          employeeToDelete?.lastName
-        }}
-      </strong>?
-    </p>
-
-    <p class="delete-warning">
-      This action cannot be undone.
-    </p>
-
-    <div class="delete-modal-actions">
-      <button
-        class="secondary-button"
-        type="button"
-        (click)="closeDeleteModal()"
-        [disabled]="
-          isDeletingEmployee
-        "
-      >
-        Cancel
-      </button>
-
-      <button
-        class="confirm-delete-button"
-        type="button"
-        (click)="
-          confirmDeleteEmployee()
-        "
-        [disabled]="
-          isDeletingEmployee
-        "
-      >
-        {{
-          isDeletingEmployee
-            ? 'Deleting...'
-            : 'Delete employee'
-        }}
-      </button>
-    </div>
-  </section>
+    </section>
+  </div>
 </div>
