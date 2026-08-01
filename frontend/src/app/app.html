@@ -1,28 +1,343 @@
-<h1>Employees</h1>
+<main class="dashboard">
+  <header class="dashboard-header">
+    <div>
+      <p class="eyebrow">
+        Employee Management
+      </p>
 
-<p *ngIf="isLoading">
-  Employees are loading...
-</p>
+      <h1>Employees</h1>
 
-<p *ngIf="errorMessage">
-  {{ errorMessage }}
-</p>
+      <p class="subtitle">
+        View and manage your organisation's employee records.
+      </p>
+    </div>
 
-<p
-  *ngIf="
-    !isLoading &&
-    !errorMessage &&
-    employees.length === 0
-  "
->
-  No employees found.
-</p>
+    <button
+      class="primary-button"
+      type="button"
+    >
+      <span>+</span>
+      Add employee
+    </button>
+  </header>
 
-<ul *ngIf="employees.length > 0">
-  <li *ngFor="let employee of employees">
-    {{ employee.firstName }}
-    {{ employee.lastName }}
-    -
-    {{ employee.department }}
-  </li>
-</ul>
+  <section class="summary-grid">
+    <article class="summary-card">
+      <div class="summary-icon">
+        👥
+      </div>
+
+      <div>
+        <p>Total employees</p>
+
+        <strong>
+          {{ totalCount }}
+        </strong>
+      </div>
+    </article>
+
+    <article class="summary-card">
+      <div class="summary-icon">
+        ✓
+      </div>
+
+      <div>
+        <p>Active employees on this page</p>
+
+        <strong>
+          {{ activeEmployeeCount }}
+        </strong>
+      </div>
+    </article>
+  </section>
+
+  <section class="employee-panel">
+    <div class="panel-header">
+      <div>
+        <h2>Employee directory</h2>
+
+        <p>
+          {{ filteredEmployees.length }}
+          employee records on this page
+        </p>
+      </div>
+    </div>
+
+    <div class="filter-container">
+      <input
+        type="text"
+        placeholder="Search by name, email, department or position..."
+        [(ngModel)]="searchTerm"
+      />
+
+      <select
+        [(ngModel)]="selectedDepartment"
+        aria-label="Filter by department"
+      >
+        <option value="">
+          All departments
+        </option>
+
+        <option
+          *ngFor="let department of departments"
+          [value]="department"
+        >
+          {{ department }}
+        </option>
+      </select>
+
+      <select
+        [(ngModel)]="sortField"
+        aria-label="Sort employees"
+      >
+        <option value="name">
+          Sort by name
+        </option>
+
+        <option value="department">
+          Sort by department
+        </option>
+
+        <option value="hireDate">
+          Sort by hire date
+        </option>
+
+        <option value="salary">
+          Sort by salary
+        </option>
+      </select>
+
+      <select
+        [(ngModel)]="sortDirection"
+        aria-label="Sort direction"
+      >
+        <option value="asc">
+          Ascending
+        </option>
+
+        <option value="desc">
+          Descending
+        </option>
+      </select>
+
+      <button
+        class="clear-button"
+        type="button"
+        (click)="clearFilters()"
+        [disabled]="
+          !searchTerm &&
+          !selectedDepartment &&
+          sortField === 'name' &&
+          sortDirection === 'asc'
+        "
+      >
+        Clear filters
+      </button>
+    </div>
+
+    <div
+      class="state-message"
+      *ngIf="isLoading"
+    >
+      Employees are loading...
+    </div>
+
+    <div
+      class="state-message error"
+      *ngIf="errorMessage"
+    >
+      {{ errorMessage }}
+
+      <button
+        type="button"
+        (click)="loadEmployees()"
+      >
+        Try again
+      </button>
+    </div>
+
+    <div
+      class="state-message"
+      *ngIf="
+        !isLoading &&
+        !errorMessage &&
+        totalCount === 0
+      "
+    >
+      No employees found.
+    </div>
+
+    <div
+      class="state-message"
+      *ngIf="
+        !isLoading &&
+        !errorMessage &&
+        totalCount > 0 &&
+        filteredEmployees.length === 0
+      "
+    >
+      No employees match your search and filters on this page.
+    </div>
+
+    <div
+      class="table-wrapper"
+      *ngIf="
+        !isLoading &&
+        !errorMessage &&
+        filteredEmployees.length > 0
+      "
+    >
+      <table>
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Department</th>
+            <th>Position</th>
+            <th>Hire date</th>
+            <th>Status</th>
+            <th class="align-right">
+              Salary
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr
+            *ngFor="let employee of filteredEmployees"
+          >
+            <td>
+              <div class="employee-cell">
+                <div class="avatar">
+                  {{ getInitials(employee) }}
+                </div>
+
+                <div>
+                  <strong>
+                    {{
+                      employee.firstName ||
+                      'Unknown'
+                    }}
+
+                    {{
+                      employee.lastName || ''
+                    }}
+                  </strong>
+
+                  <span>
+                    {{ employee.email }}
+                  </span>
+                </div>
+              </div>
+            </td>
+
+            <td>
+              {{ employee.department }}
+            </td>
+
+            <td>
+              {{ employee.position }}
+            </td>
+
+            <td>
+              {{
+                employee.hireDate
+                  | date: 'dd MMM yyyy'
+              }}
+            </td>
+
+            <td>
+              <span
+                class="status-badge"
+                [class.inactive]="
+                  !employee.isActive
+                "
+              >
+                {{
+                  employee.isActive
+                    ? 'Active'
+                    : 'Inactive'
+                }}
+              </span>
+            </td>
+
+            <td class="align-right salary">
+              {{
+                employee.salary
+                  | currency:
+                    'GBP':
+                    'symbol':
+                    '1.0-0':
+                    'en-GB'
+              }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div
+      class="pagination-container"
+      *ngIf="
+        !isLoading &&
+        !errorMessage &&
+        totalPages > 0
+      "
+    >
+      <div class="pagination-info">
+        <span>
+          Page {{ currentPage }} of {{ totalPages }}
+        </span>
+
+        <span>
+          {{ totalCount }} total employees
+        </span>
+      </div>
+
+      <div class="pagination-controls">
+        <select
+          [(ngModel)]="pageSize"
+          (ngModelChange)="changePageSize()"
+          aria-label="Employees per page"
+        >
+          <option [ngValue]="5">
+            5 per page
+          </option>
+
+          <option [ngValue]="10">
+            10 per page
+          </option>
+
+          <option [ngValue]="20">
+            20 per page
+          </option>
+        </select>
+
+        <button
+          type="button"
+          (click)="previousPage()"
+          [disabled]="currentPage === 1"
+        >
+          Previous
+        </button>
+
+        <button
+          *ngFor="let page of pageNumbers"
+          type="button"
+          class="page-button"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)"
+        >
+          {{ page }}
+        </button>
+
+        <button
+          type="button"
+          (click)="nextPage()"
+          [disabled]="currentPage === totalPages"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  </section>
+</main>
