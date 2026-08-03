@@ -4,6 +4,16 @@ Emplora is a full-stack employee management dashboard built with Angular, ASP.NE
 
 The application allows users to manage employee records, view company-wide statistics, search and filter employees, and perform complete CRUD operations through a responsive dashboard.
 
+## Preview
+
+### Dashboard Overview
+
+![Emplora Dashboard Overview](images/dashboard-overview.png)
+
+### Reports and Team Insights
+
+![Emplora Reports Section](images/reports-section.png)
+
 ## Features
 
 - View employees with server-side pagination
