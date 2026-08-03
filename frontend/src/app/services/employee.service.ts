@@ -17,8 +17,8 @@ import {
   providedIn: 'root'
 })
 export class EmployeeService {
-  private readonly apiUrl =
-    'http://localhost:5215/api/Employees';
+    private readonly apiUrl =
+    'https://emplora-api-ebru-d3cmatg2b5bae2dc.italynorth-01.azurewebsites.net/api/Employees';
 
   constructor(
     private http: HttpClient
